@@ -1,3 +1,4 @@
+mod exporter;
 mod scraper;
 
 use crate::scraper::Scraper;
@@ -12,4 +13,5 @@ async fn main() {
     ]);
     let scraper = Scraper::new(regions);
     scraper.describe_events().await;
+    exporter::Exporter::work();
 }
