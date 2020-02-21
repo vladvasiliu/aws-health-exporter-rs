@@ -1,4 +1,4 @@
-use prometheus::{opts, GaugeVec};
+use prometheus::{opts, IntGaugeVec};
 use rusoto_core::Region;
 use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
 use std::collections::HashMap;
@@ -26,7 +26,7 @@ impl Scraper {
         }
     }
 
-    pub async fn describe_events(&self) -> Result<GaugeVec> {
+    pub async fn describe_events(&self) -> Result<IntGaugeVec> {
         let opts = opts!("aws_health_events", "A list of AWS Health events");
         let labels = [
             "availability_zone",
@@ -36,7 +36,7 @@ impl Scraper {
             "service",
             "status",
         ];
-        let event_metrics = GaugeVec::new(opts, &labels)?;
+        let event_metrics = IntGaugeVec::new(opts, &labels)?;
 
         let mut next_token: Option<String> = None;
         let filter = Some(EventFilter {
@@ -66,7 +66,7 @@ impl Scraper {
         Ok(event_metrics)
     }
 
-    fn handle_events(&self, events: Vec<Event>, metric_family: &GaugeVec) {
+    fn handle_events(&self, events: Vec<Event>, metric_family: &IntGaugeVec) {
         for event in events {
             let mut label_map: HashMap<&str, &str> = HashMap::new();
 
@@ -85,7 +85,7 @@ impl Scraper {
             label_map.insert("status", &status);
 
             let metric = metric_family.get_metric_with(&label_map).unwrap();
-            metric.set(1.0);
+            metric.set(1);
         }
     }
 }
