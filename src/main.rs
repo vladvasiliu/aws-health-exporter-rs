@@ -11,6 +11,13 @@ async fn main() {
 }
 
 fn setup_logger() -> Result<(), fern::InitError> {
+    let default_level: log::LevelFilter;
+    if cfg!(debug_assertions) {
+        default_level = log::LevelFilter::Debug;
+    } else {
+        default_level = log::LevelFilter::Info;
+    }
+
     let colors = ColoredLevelConfig::new()
         .debug(Color::Cyan)
         .info(Color::Blue)
@@ -27,7 +34,7 @@ fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(log::LevelFilter::Debug)
+        .level(default_level)
         .chain(std::io::stdout())
         //        .chain(fern::log_file("output.log")?)
         .apply()?;

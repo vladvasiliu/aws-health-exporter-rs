@@ -25,11 +25,12 @@ async fn scrape() -> Result<impl warp::Reply, Infallible> {
         "global".to_string(),
     ]);
     let scraper = Scraper::new(regions);
-    scraper.describe_events().await;
+    let registry = scraper.describe_events().await;
 
     let mut buffer = vec![];
     let encoder = TextEncoder::new();
-    let metric_families = gather();
+    let mut metric_families = gather();
+    metric_families.extend(registry.gather());
     encoder.encode(&metric_families, &mut buffer).unwrap();
     Ok(String::from_utf8(buffer).unwrap())
 }

@@ -1,5 +1,5 @@
 use log::warn;
-use prometheus::{opts, register, GaugeVec};
+use prometheus::{opts, GaugeVec, Registry};
 use rusoto_core::Region;
 use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
 use std::collections::HashMap;
@@ -12,7 +12,6 @@ pub(crate) struct Scraper {
     client: AWSHealthClient,
     regions: Option<Vec<String>>,
     locale: Option<String>,
-    event_metrics: GaugeVec,
 }
 
 impl Scraper {
@@ -20,6 +19,16 @@ impl Scraper {
         // AWS Health API is only available on us-east-1
         let client = AWSHealthClient::new(Region::from_str("us-east-1").unwrap());
 
+        Self {
+            client,
+            regions,
+            locale: Some("en".into()),
+        }
+    }
+
+    pub async fn describe_events(&self) -> Registry {
+        let registry = Registry::new();
+        let opts = opts!("aws_health_events", "A list of AWS Health events");
         let labels = [
             "availability_zone",
             "event_type_category",
@@ -28,20 +37,9 @@ impl Scraper {
             "service",
             "status",
         ];
-
-        let opts = opts!("aws_health_events", "A list of AWS Health events");
         let event_metrics = GaugeVec::new(opts, &labels).unwrap();
-        register(Box::new(event_metrics.clone())).unwrap();
+        registry.register(Box::new(event_metrics.clone())).unwrap();
 
-        Self {
-            client,
-            regions,
-            locale: Some("en".into()),
-            event_metrics,
-        }
-    }
-
-    pub async fn describe_events(&self) {
         let mut next_token: Option<String> = None;
         let filter = Some(EventFilter {
             regions: self.regions.to_owned(),
@@ -60,7 +58,7 @@ impl Scraper {
             match self.client.describe_events(request).await {
                 Ok(describe_events_response) => {
                     if let Some(events) = describe_events_response.events {
-                        self.handle_events(events);
+                        self.handle_events(events, &event_metrics);
                     }
                     if let Some(token) = describe_events_response.next_token {
                         next_token = Some(token);
@@ -71,9 +69,11 @@ impl Scraper {
             }
             break;
         }
+
+        registry
     }
 
-    fn handle_events(&self, events: Vec<Event>) {
+    fn handle_events(&self, events: Vec<Event>, metric_family: &GaugeVec) {
         for event in events {
             let mut label_map: HashMap<&str, &str> = HashMap::new();
 
@@ -91,7 +91,7 @@ impl Scraper {
             label_map.insert("service", &service);
             label_map.insert("status", &status);
 
-            let metric = self.event_metrics.get_metric_with(&label_map).unwrap();
+            let metric = metric_family.get_metric_with(&label_map).unwrap();
             metric.set(1.0);
         }
     }
