@@ -12,9 +12,7 @@ async fn main() {
         "global".to_string(),
     ]);
     let scraper = Scraper::new(regions);
-    for _ in 1..3 {
-        scraper.describe_events().await;
-    }
+    scraper.describe_events().await;
 
     exporter::Exporter::work();
 }

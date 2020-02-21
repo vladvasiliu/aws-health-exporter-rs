@@ -5,7 +5,6 @@ use std::str::FromStr;
 
 use prometheus::{opts, register, GaugeVec};
 use std::collections::HashMap;
-use std::f64::NAN;
 
 mod error;
 
@@ -13,9 +12,7 @@ pub(crate) struct Scraper {
     client: AWSHealthClient,
     regions: Option<Vec<String>>,
     locale: Option<String>,
-    start_time_metric: GaugeVec,
-    end_time_metric: GaugeVec,
-    last_updated_time_metric: GaugeVec,
+    event_metrics: GaugeVec,
 }
 
 impl Scraper {
@@ -26,29 +23,21 @@ impl Scraper {
         let labels = [
             "availability_zone",
             "event_type_category",
+            "event_type_code",
             "region",
             "service",
             "status",
         ];
-        let start_time_opts = opts!("event_start_time", "Event start time");
-        let start_time_metric = GaugeVec::new(start_time_opts, &labels).unwrap();
-        register(Box::new(start_time_metric.clone())).unwrap();
 
-        let end_time_opts = opts!("event_end_time", "Event end time");
-        let end_time_metric = GaugeVec::new(end_time_opts, &labels).unwrap();
-        register(Box::new(end_time_metric.clone())).unwrap();
-
-        let last_updated_time_opts = opts!("event_last_updated_time", "Event last_updated time");
-        let last_updated_time_metric = GaugeVec::new(last_updated_time_opts, &labels).unwrap();
-        register(Box::new(last_updated_time_metric.clone())).unwrap();
+        let opts = opts!("aws_health_events", "A list of AWS Health events");
+        let event_metrics = GaugeVec::new(opts, &labels).unwrap();
+        register(Box::new(event_metrics.clone())).unwrap();
 
         Self {
             client,
             regions,
             locale: Some("en".into()),
-            start_time_metric,
-            end_time_metric,
-            last_updated_time_metric,
+            event_metrics,
         }
     }
 
@@ -56,6 +45,7 @@ impl Scraper {
         let mut next_token: Option<String> = None;
         let filter = Some(EventFilter {
             regions: self.regions.to_owned(),
+            event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
             ..Default::default()
         });
 
@@ -91,25 +81,18 @@ impl Scraper {
             let region = event.region.unwrap_or_default();
             let service = event.service.unwrap_or_default();
             let event_type_category = event.event_type_category.unwrap_or_default();
+            let event_type_code = event.event_type_code.unwrap_or_default();
             let status = event.status_code.unwrap_or_default();
 
             label_map.insert("availability_zone", &availability_zone);
             label_map.insert("event_type_category", &event_type_category);
+            label_map.insert("event_type_code", &event_type_code);
             label_map.insert("region", &region);
             label_map.insert("service", &service);
             label_map.insert("status", &status);
 
-            let start = self.start_time_metric.get_metric_with(&label_map).unwrap();
-            start.set(event.start_time.unwrap_or(NAN));
-
-            let end = self.end_time_metric.get_metric_with(&label_map).unwrap();
-            end.set(event.end_time.unwrap_or(NAN));
-
-            let last = self
-                .last_updated_time_metric
-                .get_metric_with(&label_map)
-                .unwrap();
-            last.set(event.last_updated_time.unwrap_or(NAN));
+            let metric = self.event_metrics.get_metric_with(&label_map).unwrap();
+            metric.set(1.0);
         }
     }
 }
