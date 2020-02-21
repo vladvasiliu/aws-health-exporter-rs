@@ -1,4 +1,5 @@
-use prometheus::{gather, Encoder, TextEncoder};
+use log::warn;
+use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use warp::Filter;
 
@@ -25,7 +26,22 @@ async fn scrape() -> Result<impl warp::Reply, Infallible> {
         "global".to_string(),
     ]);
     let scraper = Scraper::new(regions);
-    let registry = scraper.describe_events().await;
+    let registry = Registry::new();
+
+    let status_opts = opts!(
+        "aws_health_events_success",
+        "Whether retrieval of health events from AWS API was successful"
+    );
+    let status_gauge = IntGauge::with_opts(status_opts).unwrap();
+
+    match scraper.describe_events().await {
+        Ok(event_metrics) => {
+            registry.register(Box::new(event_metrics)).unwrap();
+            status_gauge.set(1);
+        }
+        Err(err) => warn!("{}", err),
+    }
+    registry.register(Box::new(status_gauge)).unwrap();
 
     let mut buffer = vec![];
     let encoder = TextEncoder::new();

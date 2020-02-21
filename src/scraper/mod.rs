@@ -1,5 +1,4 @@
-use log::warn;
-use prometheus::{opts, GaugeVec, Registry};
+use prometheus::{opts, GaugeVec};
 use rusoto_core::Region;
 use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
 use std::collections::HashMap;
@@ -7,6 +6,7 @@ use std::default::Default;
 use std::str::FromStr;
 
 mod error;
+use error::Result;
 
 pub(crate) struct Scraper {
     client: AWSHealthClient,
@@ -26,8 +26,7 @@ impl Scraper {
         }
     }
 
-    pub async fn describe_events(&self) -> Registry {
-        let registry = Registry::new();
+    pub async fn describe_events(&self) -> Result<GaugeVec> {
         let opts = opts!("aws_health_events", "A list of AWS Health events");
         let labels = [
             "availability_zone",
@@ -37,8 +36,7 @@ impl Scraper {
             "service",
             "status",
         ];
-        let event_metrics = GaugeVec::new(opts, &labels).unwrap();
-        registry.register(Box::new(event_metrics.clone())).unwrap();
+        let event_metrics = GaugeVec::new(opts, &labels)?;
 
         let mut next_token: Option<String> = None;
         let filter = Some(EventFilter {
@@ -55,22 +53,17 @@ impl Scraper {
                 next_token: next_token.to_owned(),
             };
 
-            match self.client.describe_events(request).await {
-                Ok(describe_events_response) => {
-                    if let Some(events) = describe_events_response.events {
-                        self.handle_events(events, &event_metrics);
-                    }
-                    if let Some(token) = describe_events_response.next_token {
-                        next_token = Some(token);
-                        continue;
-                    }
-                }
-                Err(err) => warn!("Got error: {}", err),
+            let describe_events_response = self.client.describe_events(request).await?;
+            if let Some(events) = describe_events_response.events {
+                self.handle_events(events, &event_metrics);
             }
-            break;
+            match describe_events_response.next_token {
+                Some(token) => next_token = Some(token),
+                None => break,
+            }
         }
 
-        registry
+        Ok(event_metrics)
     }
 
     fn handle_events(&self, events: Vec<Event>, metric_family: &GaugeVec) {
