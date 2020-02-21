@@ -1,10 +1,10 @@
+use log::warn;
+use prometheus::{opts, register, GaugeVec};
 use rusoto_core::Region;
 use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
+use std::collections::HashMap;
 use std::default::Default;
 use std::str::FromStr;
-
-use prometheus::{opts, register, GaugeVec};
-use std::collections::HashMap;
 
 mod error;
 
@@ -67,7 +67,7 @@ impl Scraper {
                         continue;
                     }
                 }
-                Err(err) => println!("Got error: {}", err),
+                Err(err) => warn!("Got error: {}", err),
             }
             break;
         }

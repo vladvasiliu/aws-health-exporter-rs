@@ -7,6 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chrono = { version = "~0.4", features = ["serde"] }
+fern = { version = "~0.5", features = ["colored"] }
+log = { version = "~0.4" }
 rusoto_core = { version = "~0.43.0-beta.1" }
 rusoto_health = { version = "~0.43.0-beta.1" }
 rusoto_signature = { version = "~0.43.0-beta.1" }
