@@ -24,7 +24,7 @@ impl Exporter {
         let metrics = warp::path("metrics").and_then(scrape);
         let route = home.or(status).or(metrics);
 
-        warp::serve(route).run(self.socket_address).await;
+        warp::serve(route).try_bind(self.socket_address).await;
     }
 }
 

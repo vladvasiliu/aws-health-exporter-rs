@@ -4,7 +4,6 @@ mod scraper;
 
 use crate::exporter::Exporter;
 use fern::colors::{Color, ColoredLevelConfig};
-use log::info;
 
 #[tokio::main]
 async fn main() {
