@@ -4,23 +4,19 @@ mod scraper;
 
 use crate::exporter::Exporter;
 use fern::colors::{Color, ColoredLevelConfig};
+use log::info;
 
 #[tokio::main]
 async fn main() {
-    setup_logger().unwrap();
     let config = config::Config::from_args();
+    println!("{}", config);
+    setup_logger(config.log_level).unwrap();
 
     let exporter = Exporter::new(config);
     exporter.work().await;
 }
 
-fn setup_logger() -> Result<(), fern::InitError> {
-    let default_level = if cfg!(debug_assertions) {
-        log::LevelFilter::Debug
-    } else {
-        log::LevelFilter::Info
-    };
-
+fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {
     let colors = ColoredLevelConfig::new()
         .debug(Color::Cyan)
         .info(Color::Blue)
@@ -37,7 +33,7 @@ fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         })
-        .level(default_level)
+        .level(level)
         .chain(std::io::stdout())
         //        .chain(fern::log_file("output.log")?)
         .apply()?;
