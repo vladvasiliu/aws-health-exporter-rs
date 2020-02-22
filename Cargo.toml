@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 chrono = { version = "~0.4", features = ["serde"] }
+clap = { version = "~2.33.0", features = ["color"] }
 fern = { version = "~0.5", features = ["colored"] }
 log = { version = "~0.4" }
 rusoto_core = { version = "~0.43.0-beta.1" }

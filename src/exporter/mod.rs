@@ -3,18 +3,25 @@ use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use warp::Filter;
 
+use crate::config::Config;
 use crate::scraper::Scraper;
 
-pub struct Exporter {}
+pub struct Exporter {
+    port: u16,
+}
 
 impl Exporter {
-    pub async fn work() {
+    pub fn new(config: Config) -> Self {
+        Self { port: config.port }
+    }
+
+    pub async fn work(&self) {
         let home = warp::path::end().map(|| warp::reply::html(HOME_PAGE));
         let status = warp::path("status").map(|| warp::reply::html(STATUS_PAGE));
         let metrics = warp::path("metrics").and_then(scrape);
         let route = home.or(status).or(metrics);
 
-        warp::serve(route).run(([127, 0, 0, 1], 3030)).await;
+        warp::serve(route).run(([127, 0, 0, 1], self.port)).await;
     }
 }
 

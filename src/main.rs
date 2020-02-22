@@ -1,22 +1,25 @@
+mod config;
 mod exporter;
 mod scraper;
 
+use crate::exporter::Exporter;
 use fern::colors::{Color, ColoredLevelConfig};
 
 #[tokio::main]
 async fn main() {
     setup_logger().unwrap();
+    let config = config::Config::from_args();
 
-    exporter::Exporter::work().await;
+    let exporter = Exporter::new(config);
+    exporter.work().await;
 }
 
 fn setup_logger() -> Result<(), fern::InitError> {
-    let default_level: log::LevelFilter;
-    if cfg!(debug_assertions) {
-        default_level = log::LevelFilter::Debug;
+    let default_level = if cfg!(debug_assertions) {
+        log::LevelFilter::Debug
     } else {
-        default_level = log::LevelFilter::Info;
-    }
+        log::LevelFilter::Info
+    };
 
     let colors = ColoredLevelConfig::new()
         .debug(Color::Cyan)
