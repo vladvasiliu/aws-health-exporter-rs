@@ -1,18 +1,21 @@
 use log::warn;
 use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
+use std::net::SocketAddr;
 use warp::Filter;
 
 use crate::config::Config;
 use crate::scraper::Scraper;
 
 pub struct Exporter {
-    port: u16,
+    socket_address: SocketAddr,
 }
 
 impl Exporter {
     pub fn new(config: Config) -> Self {
-        Self { port: config.port }
+        Self {
+            socket_address: config.socket_addr,
+        }
     }
 
     pub async fn work(&self) {
@@ -21,7 +24,7 @@ impl Exporter {
         let metrics = warp::path("metrics").and_then(scrape);
         let route = home.or(status).or(metrics);
 
-        warp::serve(route).run(([127, 0, 0, 1], self.port)).await;
+        warp::serve(route).run(self.socket_address).await;
     }
 }
 
