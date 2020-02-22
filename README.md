@@ -1,6 +1,6 @@
 # AWS Health Exporter
 
-This a Prometheus exporter for AWS Health events.
+This is a Prometheus exporter for AWS Health events.
 
 ## Status
 This is a work in progress. For the time being it is usable, but the interface and functionality may change.
@@ -10,9 +10,9 @@ This is a work in progress. For the time being it is usable, but the interface a
 Check the issues for open bugs / enhancements.
 
 Most notable limitations are:
-* No direct support for configuring an AWS profile
-* Doesn't export process information on Windows (this is a limitation of the underlying Prometheus exporter)
-* No TLS support on the server side
+* No direct support for configuring an AWS profile (#1)
+* Doesn't export process information on Windows (this is a limitation of the underlying [Prometheus library][prometheus-rust])
+* No TLS support on the server side (#9)
 
 ## Usage
 
@@ -81,7 +81,8 @@ The exporter exposes two endpoints:
 
 * An unknown endpoint will return a `HTTP 404`.
 * If the exporter itself is OK a call to `/metrics` will always return `HTTP 200` and some metrics.
-* Status of the call to AWS API is reflected in the state of `aws_health_events_success`.
+  Deviation from this behaviour is considered a bug.
+* Status of the AWS API call is reflected by `aws_health_events_success` metric.
 
 
 ## Related projects
