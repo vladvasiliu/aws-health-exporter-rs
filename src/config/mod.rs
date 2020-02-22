@@ -36,8 +36,9 @@ impl Config {
 }
 
 fn int_valid_port(num: String) -> Result<(), String> {
-    match num.parse::<u16>().or_else(|err| Err(format!("{}", err)))? {
-        x if x < 1 => Err("Must be between 1 an 65535".into()),
+    // Try to parse as i32 so that in case of overflow we can show a pretty error message.
+    match num.parse::<i32>().or_else(|err| Err(format!("{}", err)))? {
+        x if x < 0 || x > 65535 => Err("Must be between 1 an 65535".into()),
         _ => Ok(()),
     }
 }
