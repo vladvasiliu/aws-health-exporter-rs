@@ -6,38 +6,45 @@ use warp::Filter;
 
 use crate::config::Config;
 use crate::scraper::Scraper;
+use std::sync::Arc;
 
 pub struct Exporter {
     socket_address: SocketAddr,
+    scraper: Arc<Scraper>,
 }
 
 impl Exporter {
     pub fn new(config: Config) -> Self {
+        let regions: Option<Vec<String>> = Some(vec![
+            "eu-west-1".to_string(),
+            "eu-central-1".to_string(),
+            "eu-west-3".to_string(),
+            "global".to_string(),
+        ]);
+        let scraper = Arc::new(Scraper::new(regions));
+
         Self {
             socket_address: config.socket_addr,
+            scraper,
         }
     }
 
     pub async fn work(&self) {
+        let scraper = self.scraper.clone();
         let home = warp::path::end().map(|| warp::reply::html(HOME_PAGE));
         let status = warp::path("status").map(|| warp::reply::html(STATUS_PAGE));
-        let metrics = warp::path("metrics").and_then(scrape);
+        let metrics = warp::path("metrics").and_then(move || {
+            let scraper = scraper.clone();
+            scrape(scraper)
+        });
         let route = home.or(status).or(metrics);
 
         warp::serve(route).try_bind(self.socket_address).await;
     }
 }
 
-async fn scrape() -> Result<impl warp::Reply, Infallible> {
-    let regions: Option<Vec<String>> = Some(vec![
-        "eu-west-1".to_string(),
-        "eu-central-1".to_string(),
-        "eu-west-3".to_string(),
-        "global".to_string(),
-    ]);
-    let scraper = Scraper::new(regions);
+async fn scrape(scraper: Arc<Scraper>) -> Result<impl warp::Reply, Infallible> {
     let registry = Registry::new();
-
     let status_opts = opts!(
         "aws_health_events_success",
         "Whether retrieval of health events from AWS API was successful"
