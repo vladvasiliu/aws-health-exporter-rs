@@ -15,13 +15,7 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(config: Config) -> Self {
-        let regions: Option<Vec<String>> = Some(vec![
-            "eu-west-1".to_string(),
-            "eu-central-1".to_string(),
-            "eu-west-3".to_string(),
-            "global".to_string(),
-        ]);
-        let scraper = Arc::new(Scraper::new(regions));
+        let scraper = Arc::new(Scraper::new(config.regions));
 
         Self {
             socket_address: config.socket_addr,
