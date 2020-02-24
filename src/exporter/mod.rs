@@ -1,4 +1,4 @@
-use log::warn;
+use log::{info, warn};
 use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -33,7 +33,9 @@ impl Exporter {
         });
         let route = home.or(status).or(metrics);
 
-        warp::serve(route).try_bind(self.socket_address).await;
+        let srv = warp::serve(route).try_bind(self.socket_address);
+        info!("Listening on {}", self.socket_address);
+        srv.await;
     }
 }
 
