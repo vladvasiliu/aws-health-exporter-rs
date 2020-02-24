@@ -11,11 +11,12 @@ use error::Result;
 pub(crate) struct Scraper {
     client: AWSHealthClient,
     regions: Option<Vec<String>>,
+    services: Option<Vec<String>>,
     locale: Option<String>,
 }
 
 impl Scraper {
-    pub fn new(regions: Vec<String>) -> Self {
+    pub fn new(regions: Vec<String>, services: Vec<String>) -> Self {
         // AWS Health API is only available on us-east-1
         let client = AWSHealthClient::new(Region::from_str("us-east-1").unwrap());
 
@@ -25,10 +26,17 @@ impl Scraper {
             None
         };
 
+        let actual_services = if services != vec!["all"] {
+            Some(services)
+        } else {
+            None
+        };
+
         Self {
             client,
             regions: actual_regions,
             locale: Some("en".into()),
+            services: actual_services,
         }
     }
 
@@ -47,6 +55,7 @@ impl Scraper {
         let mut next_token: Option<String> = None;
         let filter = Some(EventFilter {
             regions: self.regions.to_owned(),
+            services: self.services.to_owned(),
             event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
             ..Default::default()
         });

@@ -1,4 +1,4 @@
-use log::{info, warn};
+use log::warn;
 use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use std::net::SocketAddr;
@@ -15,7 +15,7 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(config: Config) -> Self {
-        let scraper = Arc::new(Scraper::new(config.regions));
+        let scraper = Arc::new(Scraper::new(config.regions, config.services));
 
         Self {
             socket_address: config.socket_addr,
@@ -33,9 +33,7 @@ impl Exporter {
         });
         let route = home.or(status).or(metrics);
 
-        let srv = warp::serve(route).try_bind(self.socket_address);
-        info!("Listening on {}", self.socket_address);
-        srv.await;
+        warp::serve(route).try_bind(self.socket_address).await;
     }
 }
 

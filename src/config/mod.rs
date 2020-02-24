@@ -11,6 +11,7 @@ pub struct Config {
     pub socket_addr: SocketAddr,
     pub log_level: log::LevelFilter,
     pub regions: Vec<String>,
+    pub services: Vec<String>,
     version: String,
     name: String,
 }
@@ -53,6 +54,7 @@ impl Config {
             )
             .arg(
                 Arg::with_name("region")
+                    .short("r")
                     .long("region")
                     .takes_value(true)
                     .required(false)
@@ -60,6 +62,16 @@ impl Config {
                     .default_value("all")
                     .multiple(true)
                     .validator(validate_region),
+            )
+            .arg(
+                Arg::with_name("service")
+                    .short("s")
+                    .long("service")
+                    .takes_value(true)
+                    .required(false)
+                    .help("Service for which to retrieve events")
+                    .default_value("all")
+                    .multiple(true),
             )
             .get_matches();
 
@@ -85,12 +97,21 @@ impl Config {
         regions.sort_unstable();
         regions.dedup();
 
+        let mut services: Vec<String> = matches
+            .values_of("service")
+            .unwrap()
+            .map(|e| e.into())
+            .collect();
+        services.sort_unstable();
+        services.dedup();
+
         Self {
             socket_addr: matches.value_of("listen_host").unwrap().parse().unwrap(),
             log_level,
             version: crate_version!().to_string(),
             name: crate_name!().to_string(),
             regions,
+            services,
         }
     }
 }
@@ -100,9 +121,13 @@ impl fmt::Display for Config {
         let mut result = format!("Starting {} v{}\n", self.name, self.version);
         result.push_str(&format!("Listening on: {}\n", self.socket_addr));
         result.push_str(&format!("Log level: {}\n", self.log_level));
-        result.push_str(&format!("Regions: {}\n", self.log_level));
+        result.push_str("Regions:\n");
         for region in &self.regions {
             result.push_str(&format!("\t* {}\n", region));
+        }
+        result.push_str("Services:\n");
+        for service in &self.services {
+            result.push_str(&format!("\t* {}\n", service));
         }
         write!(f, "{}", result)
     }
