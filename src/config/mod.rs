@@ -4,7 +4,7 @@ use std::fmt;
 use std::net::SocketAddr;
 use std::str::FromStr;
 
-static DEFAULT_IP: &str = "[::]:3030";
+static DEFAULT_IP: &str = "[::]:9679";
 
 #[derive(Debug)]
 pub struct Config {
