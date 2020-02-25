@@ -4,12 +4,13 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use warp::Filter;
 
-use crate::config::Config;
+use crate::config::{Config, TLS};
 use crate::scraper::Scraper;
 use std::sync::Arc;
 
 pub struct Exporter {
     socket_address: SocketAddr,
+    tls_config: Option<TLS>,
     scraper: Arc<Scraper>,
 }
 
@@ -19,6 +20,7 @@ impl Exporter {
 
         Self {
             socket_address: config.socket_addr,
+            tls_config: config.tls_config,
             scraper,
         }
     }
@@ -33,7 +35,17 @@ impl Exporter {
         });
         let route = home.or(status).or(metrics);
 
-        warp::serve(route).try_bind(self.socket_address).await;
+        let server = warp::serve(route);
+        match &self.tls_config {
+            Some(tls_config) => {
+                let tls_server = server
+                    .tls()
+                    .key_path(&tls_config.key)
+                    .cert_path(&tls_config.cert);
+                tls_server.bind(self.socket_address).await;
+            }
+            None => server.try_bind(self.socket_address).await,
+        }
     }
 }
 

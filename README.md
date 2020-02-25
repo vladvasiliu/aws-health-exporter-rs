@@ -10,9 +10,8 @@ This is a work in progress. For the time being it is usable, but the interface a
 Check the issues for open bugs / enhancements.
 
 Most notable limitations are:
-* No direct support for configuring an AWS profile (#1)
 * Doesn't export process information on Windows (this is a limitation of the underlying [Prometheus library][prometheus-rust])
-* No TLS support on the server side (#9)
+* Attempt to bind to a used socket when using TLS panics instead of quitting gracefully. This is a limitation of the underlying [http][warp] library.
 
 ## Usage
 
@@ -20,6 +19,16 @@ Most notable limitations are:
 
 * An AWS account
 * AWS Business support or better - [official docs](https://docs.aws.amazon.com/health/latest/ug/health-api.html)
+
+### Using Docker
+
+An image is available on [Docker Hub]. To run it:
+
+```
+docker run --rm -d --name aws-health-exporter vladvasiliu/aws-health-exporter-rs:latest
+```
+
+This accepts the same options as the binary.
 
 ###  Building
 
@@ -105,6 +114,7 @@ Please see [`COPYING`](COPYING) for the full text of the license.
 
 [aws api]: <https://docs.aws.amazon.com/health/latest/APIReference/API_DescribeEvents.html> "AWS API reference"
 [aws credentials best practices]: <https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html> "AWS access keys best practices"
+[docker hub]: <https://hub.docker.com/repository/docker/vladvasiliu/aws-health-exporter-rs> "Docker Hub"
 [prometheus-rust]: <https://docs.rs/prometheus/> "Rust Prometheus documentation"
 [rusoto]: <https://github.com/rusoto/rusoto> "Rust AWS SDK"
 [tokio]: <https://tokio.rs/> "Tokio Homepage"

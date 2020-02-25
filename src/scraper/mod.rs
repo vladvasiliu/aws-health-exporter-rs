@@ -21,6 +21,10 @@ pub(crate) struct Scraper {
 }
 
 impl Scraper {
+    /// Create a new scraper and handle authentication.
+    ///
+    /// Documentation related to handling assumed roles:
+    /// https://github.com/rusoto/rusoto/blob/master/AWS-CREDENTIALS.md
     pub fn new(config: &Config) -> Self {
         let health_region = Region::from_str(HEALTH_REGION).unwrap();
 

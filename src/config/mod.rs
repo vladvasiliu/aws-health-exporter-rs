@@ -3,9 +3,16 @@ use regex::Regex;
 use rusoto_core::Region;
 use std::fmt;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::str::FromStr;
 
 static DEFAULT_IP: &str = "[::]:9679";
+
+#[derive(Debug)]
+pub struct TLS {
+    pub key: String,
+    pub cert: String,
+}
 
 #[derive(Debug)]
 pub struct Config {
@@ -15,6 +22,7 @@ pub struct Config {
     pub services: Option<Vec<String>>,
     pub role: Option<String>,
     pub role_region: Option<String>,
+    pub tls_config: Option<TLS>,
     version: String,
     name: String,
 }
@@ -91,6 +99,24 @@ impl Config {
                     .requires("role")
                     .validator(validate_region),
             )
+            .arg(
+                Arg::with_name("tls_key")
+                    .long("tls-key")
+                    .help("Path to TLS certificate key")
+                    .takes_value(true)
+                    .required(false)
+                    .requires("tls_cert")
+                    .validator(validate_file_path),
+            )
+            .arg(
+                Arg::with_name("tls_cert")
+                    .long("tls-cert")
+                    .help("Path to TLS certificate")
+                    .takes_value(true)
+                    .required(false)
+                    .requires("tls_key")
+                    .validator(validate_file_path),
+            )
             .get_matches();
 
         let log_level = if matches.occurrences_of("debug") >= 2 {
@@ -116,6 +142,14 @@ impl Config {
             Some(services)
         });
 
+        let tls_config = match (matches.value_of("tls_key"), matches.value_of("tls_cert")) {
+            (Some(key), Some(cert)) => Some(TLS {
+                key: key.to_string(),
+                cert: cert.to_string(),
+            }),
+            _ => None,
+        };
+
         Self {
             /// Works because the argument is validated
             socket_addr: matches.value_of("listen_host").unwrap().parse().unwrap(),
@@ -126,20 +160,30 @@ impl Config {
             services,
             role: matches.value_of("role").map(|s| s.to_string()),
             role_region: matches.value_of("role_region").map(|s| s.to_string()),
+            tls_config,
         }
     }
 }
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut result = format!("Starting {} v{}\n", self.name, self.version);
-        result.push_str(&format!("Listening on: {}\n", self.socket_addr));
-        result.push_str(&format!("Log level: {}\n", self.log_level));
+        let mut result = format!("Starting {} v{}\n\n", self.name, self.version);
+        result.push_str(&format!("Listening on:\t{}\n", self.socket_addr));
+        result.push_str(&format!("Log level:\t\t{}\n", self.log_level));
         if let Some(role) = &self.role {
             result.push_str(&format!("Role: {}\n", role));
         }
         if let Some(role_region) = &self.role_region {
             result.push_str(&format!("Role STS Endpoint: {}", role_region));
+        }
+
+        result.push_str("TLS config:");
+        if let Some(tls_config) = &self.tls_config {
+            result.push_str("\n");
+            result.push_str(&format!("\tKey file:\t\t\t{}\n", tls_config.key));
+            result.push_str(&format!("\tCertificate file:\t{}\n", tls_config.cert));
+        } else {
+            result.push_str("\t\tOff\n");
         }
 
         result.push_str("Regions:");
@@ -150,7 +194,7 @@ impl fmt::Display for Config {
                     result.push_str(&format!("\t* {}\n", region));
                 }
             }
-            None => result.push_str(" All\n"),
+            None => result.push_str("\t\tAll\n"),
         }
 
         result.push_str("Services:");
@@ -161,7 +205,7 @@ impl fmt::Display for Config {
                     result.push_str(&format!("\t* {}\n", service));
                 }
             }
-            None => result.push_str(" All\n"),
+            None => result.push_str("\t\tAll\n"),
         }
         write!(f, "{}", result)
     }
@@ -196,5 +240,13 @@ fn validate_role_arn(role_arn: String) -> Result<(), String> {
         Ok(())
     } else {
         Err("must be of the form `arn:aws:iam::123456789012:role/something`".to_string())
+    }
+}
+
+fn validate_file_path(file_path: String) -> Result<(), String> {
+    if Path::new(&file_path).is_file() {
+        Ok(())
+    } else {
+        Err(format!("{} is not a file", file_path))
     }
 }
