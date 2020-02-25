@@ -15,7 +15,7 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(config: Config) -> Self {
-        let scraper = Arc::new(Scraper::new(config.regions, config.services));
+        let scraper = Arc::new(Scraper::new(&config));
 
         Self {
             socket_address: config.socket_addr,

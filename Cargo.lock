@@ -79,9 +79,11 @@ dependencies = [
  "fern",
  "log 0.4.8",
  "prometheus",
+ "regex",
  "rusoto_core",
  "rusoto_health",
  "rusoto_signature",
+ "rusoto_sts",
  "tokio",
  "warp",
 ]
@@ -1390,6 +1392,22 @@ dependencies = [
  "sha2",
  "time 0.2.6",
  "tokio",
+]
+
+[[package]]
+name = "rusoto_sts"
+version = "0.43.0-beta.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "70818c7a842047f1e20aa827bfc786e72134e52b1dfa63929762c2721d3cdd5f"
+dependencies = [
+ "async-trait",
+ "bytes 0.5.4",
+ "chrono",
+ "futures",
+ "rusoto_core",
+ "serde_urlencoded",
+ "tempfile",
+ "xml-rs",
 ]
 
 [[package]]

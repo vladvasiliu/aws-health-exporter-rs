@@ -1,4 +1,5 @@
 use clap::{crate_authors, crate_description, crate_name, crate_version, App, AppSettings, Arg};
+use regex::Regex;
 use rusoto_core::Region;
 use std::fmt;
 use std::net::SocketAddr;
@@ -78,7 +79,8 @@ impl Config {
                     .long("role")
                     .takes_value(true)
                     .help("Assume IAM Role")
-                    .required(false),
+                    .required(false)
+                    .validator(validate_role_arn),
             )
             .arg(
                 Arg::with_name("role_region")
@@ -178,4 +180,21 @@ fn validate_region(region: String) -> Result<(), String> {
     Region::from_str(&region)
         .and(Ok(()))
         .or_else(|err| Err(format!("{}", err)))
+}
+
+/// Validates that a given AWS Role ARN looks OK
+///
+/// The 20 character limit comes from an error raised when a short string is given.
+/// The regular expression comes from the official docs:
+/// https://docs.aws.amazon.com/IAM/latest/UserGuide/list_identityandaccessmanagement.html#identityandaccessmanagement-resources-for-iam-policies
+fn validate_role_arn(role_arn: String) -> Result<(), String> {
+    if role_arn.len() < 20 {
+        return Err("Must have length greater than or equal to 20".to_string());
+    }
+    let arn_regex = Regex::new(r"(?i:arn:aws:iam::\d{12}:role/.*)").unwrap();
+    if arn_regex.is_match(&role_arn) {
+        Ok(())
+    } else {
+        Err("must be of the form `arn:aws:iam::123456789012:role/something`".to_string())
+    }
 }

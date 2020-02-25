@@ -1,12 +1,17 @@
 use prometheus::{opts, IntGaugeVec};
-use rusoto_core::Region;
+use rusoto_core::{HttpClient, Region};
 use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
+use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 use std::collections::HashMap;
 use std::default::Default;
 use std::str::FromStr;
 
 mod error;
+use crate::config::Config;
 use error::Result;
+
+// AWS Health API is only available on us-east-1
+static HEALTH_REGION: &str = "us-east-1";
 
 pub(crate) struct Scraper {
     client: AWSHealthClient,
@@ -16,15 +21,37 @@ pub(crate) struct Scraper {
 }
 
 impl Scraper {
-    pub fn new(regions: Option<Vec<String>>, services: Option<Vec<String>>) -> Self {
-        // AWS Health API is only available on us-east-1
-        let client = AWSHealthClient::new(Region::from_str("us-east-1").unwrap());
+    pub fn new(config: &Config) -> Self {
+        let health_region = Region::from_str(HEALTH_REGION).unwrap();
+
+        let client = match &config.role {
+            None => AWSHealthClient::new(health_region),
+            Some(role) => {
+                let sts_region = match &config.role_region {
+                    Some(region) => Region::from_str(region).unwrap(),
+                    None => Region::default(),
+                };
+                let sts = StsClient::new(sts_region);
+
+                let provider = StsAssumeRoleSessionCredentialsProvider::new(
+                    sts,
+                    role.to_owned(),
+                    "aws-health-exporter".to_owned(),
+                    None,
+                    None,
+                    None,
+                    None,
+                );
+
+                AWSHealthClient::new_with(HttpClient::new().unwrap(), provider, health_region)
+            }
+        };
 
         Self {
             client,
-            regions,
+            regions: config.regions.to_owned(),
             locale: Some("en".into()),
-            services,
+            services: config.services.to_owned(),
         }
     }
 
