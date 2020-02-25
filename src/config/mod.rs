@@ -11,7 +11,9 @@ pub struct Config {
     pub socket_addr: SocketAddr,
     pub log_level: log::LevelFilter,
     pub regions: Vec<String>,
-    pub services: Vec<String>,
+    pub services: Option<Vec<String>>,
+    pub role: Option<String>,
+    pub role_region: Option<String>,
     version: String,
     name: String,
 }
@@ -70,8 +72,23 @@ impl Config {
                     .takes_value(true)
                     .required(false)
                     .help("Service for which to retrieve events")
-                    .default_value("all")
                     .multiple(true),
+            )
+            .arg(
+                Arg::with_name("role")
+                    .long("role")
+                    .takes_value(true)
+                    .help("Assume IAM Role")
+                    .required(false),
+            )
+            .arg(
+                Arg::with_name("role_region")
+                    .long("role-region")
+                    .help("Endpoint to use for calls to STS")
+                    .takes_value(true)
+                    .required(false)
+                    .requires("role")
+                    .validator(validate_region),
             )
             .get_matches();
 
@@ -97,21 +114,24 @@ impl Config {
         regions.sort_unstable();
         regions.dedup();
 
-        let mut services: Vec<String> = matches
-            .values_of("service")
-            .unwrap()
-            .map(|e| e.into())
-            .collect();
-        services.sort_unstable();
-        services.dedup();
+        let services = if let Some(mut services) = matches.values_of_lossy("service") {
+            services.sort_unstable();
+            services.dedup();
+            Some(services)
+        } else {
+            None
+        };
 
         Self {
+            /// Works because the argument is validated
             socket_addr: matches.value_of("listen_host").unwrap().parse().unwrap(),
             log_level,
             version: crate_version!().to_string(),
             name: crate_name!().to_string(),
             regions,
             services,
+            role: matches.value_of("role").map(|s| s.to_string()),
+            role_region: matches.value_of("role_region").map(|s| s.to_string()),
         }
     }
 }
@@ -121,13 +141,24 @@ impl fmt::Display for Config {
         let mut result = format!("Starting {} v{}\n", self.name, self.version);
         result.push_str(&format!("Listening on: {}\n", self.socket_addr));
         result.push_str(&format!("Log level: {}\n", self.log_level));
+        if let Some(role) = &self.role {
+            result.push_str(&format!("Role: {}", role));
+        }
+        if let Some(role_region) = &self.role_region {
+            result.push_str(&format!("Role STS Endpoint: {}", role_region));
+        }
         result.push_str("Regions:\n");
         for region in &self.regions {
             result.push_str(&format!("\t* {}\n", region));
         }
-        result.push_str("Services:\n");
-        for service in &self.services {
-            result.push_str(&format!("\t* {}\n", service));
+        result.push_str("Service filter:");
+        if let Some(services) = &self.services {
+            result.push_str("\n");
+            for service in services {
+                result.push_str(&format!("\t* {}\n", service));
+            }
+        } else {
+            result.push_str(" None");
         }
         write!(f, "{}", result)
     }

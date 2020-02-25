@@ -16,7 +16,7 @@ pub(crate) struct Scraper {
 }
 
 impl Scraper {
-    pub fn new(regions: Vec<String>, services: Vec<String>) -> Self {
+    pub fn new(regions: Vec<String>, services: Option<Vec<String>>) -> Self {
         // AWS Health API is only available on us-east-1
         let client = AWSHealthClient::new(Region::from_str("us-east-1").unwrap());
 
@@ -26,17 +26,11 @@ impl Scraper {
             None
         };
 
-        let actual_services = if services != vec!["all"] {
-            Some(services)
-        } else {
-            None
-        };
-
         Self {
             client,
             regions: actual_regions,
             locale: Some("en".into()),
-            services: actual_services,
+            services,
         }
     }
 
