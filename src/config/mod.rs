@@ -10,7 +10,7 @@ static DEFAULT_IP: &str = "[::]:9679";
 pub struct Config {
     pub socket_addr: SocketAddr,
     pub log_level: log::LevelFilter,
-    pub regions: Vec<String>,
+    pub regions: Option<Vec<String>>,
     pub services: Option<Vec<String>>,
     pub role: Option<String>,
     pub role_region: Option<String>,
@@ -61,7 +61,6 @@ impl Config {
                     .takes_value(true)
                     .required(false)
                     .help("Region for which to retrieve events")
-                    .default_value("all")
                     .multiple(true)
                     .validator(validate_region),
             )
@@ -102,25 +101,18 @@ impl Config {
             log::LevelFilter::Info
         };
 
-        let mut regions: Vec<String> = matches
-            .values_of("region")
-            .unwrap()
-            .map(|e| e.into())
-            .collect();
-
-        if regions != vec!["all"] {
+        let regions = matches.values_of_lossy("region").and_then(|mut regions| {
             regions.push("global".to_string());
-        }
-        regions.sort_unstable();
-        regions.dedup();
+            regions.sort_unstable();
+            regions.dedup();
+            Some(regions)
+        });
 
-        let services = if let Some(mut services) = matches.values_of_lossy("service") {
+        let services = matches.values_of_lossy("service").and_then(|mut services| {
             services.sort_unstable();
             services.dedup();
             Some(services)
-        } else {
-            None
-        };
+        });
 
         Self {
             /// Works because the argument is validated
@@ -142,23 +134,32 @@ impl fmt::Display for Config {
         result.push_str(&format!("Listening on: {}\n", self.socket_addr));
         result.push_str(&format!("Log level: {}\n", self.log_level));
         if let Some(role) = &self.role {
-            result.push_str(&format!("Role: {}", role));
+            result.push_str(&format!("Role: {}\n", role));
         }
         if let Some(role_region) = &self.role_region {
             result.push_str(&format!("Role STS Endpoint: {}", role_region));
         }
-        result.push_str("Regions:\n");
-        for region in &self.regions {
-            result.push_str(&format!("\t* {}\n", region));
-        }
-        result.push_str("Service filter:");
-        if let Some(services) = &self.services {
-            result.push_str("\n");
-            for service in services {
-                result.push_str(&format!("\t* {}\n", service));
+
+        result.push_str("Regions:");
+        match &self.regions {
+            Some(regions) => {
+                result.push_str("\n");
+                for region in regions {
+                    result.push_str(&format!("\t* {}\n", region));
+                }
             }
-        } else {
-            result.push_str(" None");
+            None => result.push_str(" All\n"),
+        }
+
+        result.push_str("Services:");
+        match &self.services {
+            Some(services) => {
+                result.push_str("\n");
+                for service in services {
+                    result.push_str(&format!("\t* {}\n", service));
+                }
+            }
+            None => result.push_str(" All\n"),
         }
         write!(f, "{}", result)
     }
