@@ -33,7 +33,7 @@ impl Scraper {
                 };
                 let sts = StsClient::new(sts_region);
 
-                let provider = StsAssumeRoleSessionCredentialsProvider::new(
+                let sts_provider = StsAssumeRoleSessionCredentialsProvider::new(
                     sts,
                     role.to_owned(),
                     "aws-health-exporter".to_owned(),
@@ -42,8 +42,13 @@ impl Scraper {
                     None,
                     None,
                 );
-
-                AWSHealthClient::new_with(HttpClient::new().unwrap(), provider, health_region)
+                let auto_refreshing_provider =
+                    rusoto_credential::AutoRefreshingProvider::new(sts_provider).unwrap();
+                AWSHealthClient::new_with(
+                    HttpClient::new().unwrap(),
+                    auto_refreshing_provider,
+                    health_region,
+                )
             }
         };
 

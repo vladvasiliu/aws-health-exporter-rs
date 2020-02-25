@@ -72,7 +72,7 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 
 [[package]]
 name = "aws_health_exporter"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "clap",
@@ -81,6 +81,7 @@ dependencies = [
  "prometheus",
  "regex",
  "rusoto_core",
+ "rusoto_credential",
  "rusoto_health",
  "rusoto_signature",
  "rusoto_sts",
