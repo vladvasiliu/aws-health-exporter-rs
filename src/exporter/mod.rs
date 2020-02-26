@@ -2,7 +2,7 @@ use crate::config::{Config, TLS};
 use crate::exporter::error::Result;
 use crate::scraper::Scraper;
 use log::warn;
-use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
+use prometheus::{gather, opts, register, Encoder, IntCounterVec, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::result::Result as StdResult;
@@ -15,26 +15,31 @@ pub struct Exporter {
     socket_address: SocketAddr,
     tls_config: Option<TLS>,
     scraper: Arc<Scraper>,
+    exporter_metrics: Arc<IntCounterVec>,
 }
 
 impl Exporter {
     pub fn new(config: Config) -> Result<Self> {
         let scraper = Arc::new(Scraper::new(&config)?);
+        let exporter_metrics = Arc::new(create_exporter_metrics()?);
 
         Ok(Self {
             socket_address: config.socket_addr,
             tls_config: config.tls_config,
             scraper,
+            exporter_metrics,
         })
     }
 
     pub async fn work(&self) {
         let scraper = self.scraper.clone();
+        let metrics_family = self.exporter_metrics.clone();
         let home = warp::path::end().map(|| warp::reply::html(HOME_PAGE));
         let status = warp::path("status").map(|| warp::reply::html(STATUS_PAGE));
         let metrics = warp::path("metrics").and_then(move || {
             let scraper = scraper.clone();
-            scrape(scraper)
+            let metrics_family = metrics_family.clone();
+            scrape(scraper, metrics_family)
         });
         let route = home.or(status).or(metrics);
 
@@ -52,7 +57,21 @@ impl Exporter {
     }
 }
 
-async fn scrape(scraper: Arc<Scraper>) -> StdResult<impl warp::Reply, Infallible> {
+fn create_exporter_metrics() -> Result<IntCounterVec> {
+    let exporter_opts = opts!(
+        "http_requests",
+        "Number of HTTP requests received by the exporter"
+    );
+    let labels = ["status"];
+    let exporter_metrics = IntCounterVec::new(exporter_opts, &labels)?;
+    register(Box::new(exporter_metrics.clone()))?;
+    Ok(exporter_metrics)
+}
+
+async fn scrape(
+    scraper: Arc<Scraper>,
+    exporter_metrics_family: Arc<IntCounterVec>,
+) -> StdResult<impl warp::Reply, Infallible> {
     let registry = Registry::new();
     let status_opts = opts!(
         "aws_health_events_success",
@@ -60,14 +79,23 @@ async fn scrape(scraper: Arc<Scraper>) -> StdResult<impl warp::Reply, Infallible
     );
     let status_gauge = IntGauge::with_opts(status_opts).unwrap();
 
+    let labels: &[&str];
     match scraper.describe_events().await {
         Ok(event_metrics) => {
             registry.register(Box::new(event_metrics)).unwrap();
             status_gauge.set(1);
+            labels = &["success"];
         }
-        Err(err) => warn!("{}", err),
+        Err(err) => {
+            warn!("{}", err);
+            labels = &["error"];
+        }
     }
     registry.register(Box::new(status_gauge)).unwrap();
+    let exporter_metric = exporter_metrics_family
+        .get_metric_with_label_values(labels)
+        .unwrap();
+    exporter_metric.inc();
 
     let mut buffer = vec![];
     let encoder = TextEncoder::new();
