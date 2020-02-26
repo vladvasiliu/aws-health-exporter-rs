@@ -1,5 +1,6 @@
 # AWS Health Exporter
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/vladvasiliu/aws-health-exporter-rs.svg?style=flat)][docker hub]
+[![License](https://img.shields.io/github/license/vladvasiliu/aws-health-exporter-rs.svg?style=flat)](COPYING)
 
 
 This is a Prometheus exporter for AWS Health events.
@@ -118,7 +119,7 @@ The reason I started a new project is two-fold:
 * I'm in the process of learning Rust and this looked like a good project.
 
 
-## License [![License](https://img.shields.io/github/license/vladvasiliu/aws-health-exporter-rs.svg?style=flat)](COPYING)
+## License 
 
 This project is released under the terms of the GNU General Public License, version 3.
 Please see [`COPYING`](COPYING) for the full text of the license.
