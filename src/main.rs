@@ -4,6 +4,7 @@ mod scraper;
 
 use crate::exporter::Exporter;
 use fern::colors::{Color, ColoredLevelConfig};
+use log::error;
 
 #[tokio::main]
 async fn main() {
@@ -11,8 +12,10 @@ async fn main() {
     println!("{}", config);
     setup_logger(config.log_level).unwrap();
 
-    let exporter = Exporter::new(config);
-    exporter.work().await;
+    match Exporter::new(config) {
+        Ok(exporter) => exporter.work().await,
+        Err(err) => error!("Failed to create exporter: {}", err),
+    }
 }
 
 fn setup_logger(level: log::LevelFilter) -> Result<(), fern::InitError> {

@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::str::FromStr;
 
-mod error;
+pub(crate) mod error;
 use crate::config::Config;
 use error::Result;
 
@@ -25,14 +25,14 @@ impl Scraper {
     ///
     /// Documentation related to handling assumed roles:
     /// https://github.com/rusoto/rusoto/blob/master/AWS-CREDENTIALS.md
-    pub fn new(config: &Config) -> Self {
-        let health_region = Region::from_str(HEALTH_REGION).unwrap();
+    pub fn new(config: &Config) -> Result<Self> {
+        let health_region = Region::from_str(HEALTH_REGION)?;
 
         let client = match &config.role {
             None => AWSHealthClient::new(health_region),
             Some(role) => {
                 let sts_region = match &config.role_region {
-                    Some(region) => Region::from_str(region).unwrap(),
+                    Some(region) => Region::from_str(region)?,
                     None => Region::default(),
                 };
                 let sts = StsClient::new(sts_region);
@@ -47,21 +47,21 @@ impl Scraper {
                     None,
                 );
                 let auto_refreshing_provider =
-                    rusoto_credential::AutoRefreshingProvider::new(sts_provider).unwrap();
+                    rusoto_credential::AutoRefreshingProvider::new(sts_provider)?;
                 AWSHealthClient::new_with(
-                    HttpClient::new().unwrap(),
+                    HttpClient::new()?,
                     auto_refreshing_provider,
                     health_region,
                 )
             }
         };
 
-        Self {
+        Ok(Self {
             client,
             regions: config.regions.to_owned(),
             locale: Some("en".into()),
             services: config.services.to_owned(),
-        }
+        })
     }
 
     pub async fn describe_events(&self) -> Result<IntGaugeVec> {
@@ -94,7 +94,7 @@ impl Scraper {
 
             let describe_events_response = self.client.describe_events(request).await?;
             if let Some(events) = describe_events_response.events {
-                self.handle_events(events, &event_metrics);
+                self.handle_events(events, &event_metrics)?;
             }
             match describe_events_response.next_token {
                 Some(token) => next_token = Some(token),
@@ -105,7 +105,7 @@ impl Scraper {
         Ok(event_metrics)
     }
 
-    fn handle_events(&self, events: Vec<Event>, metric_family: &IntGaugeVec) {
+    fn handle_events(&self, events: Vec<Event>, metric_family: &IntGaugeVec) -> Result<()> {
         for event in events {
             let mut label_map: HashMap<&str, &str> = HashMap::new();
 
@@ -123,8 +123,9 @@ impl Scraper {
             label_map.insert("service", &service);
             label_map.insert("status", &status);
 
-            let metric = metric_family.get_metric_with(&label_map).unwrap();
+            let metric = metric_family.get_metric_with(&label_map)?;
             metric.set(1);
         }
+        Ok(())
     }
 }

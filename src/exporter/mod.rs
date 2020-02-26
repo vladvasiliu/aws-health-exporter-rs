@@ -1,11 +1,15 @@
 use crate::config::{Config, TLS};
+use crate::exporter::error::Result;
 use crate::scraper::Scraper;
 use log::warn;
 use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use std::net::SocketAddr;
+use std::result::Result as StdResult;
 use std::sync::Arc;
 use warp::Filter;
+
+mod error;
 
 pub struct Exporter {
     socket_address: SocketAddr,
@@ -14,14 +18,14 @@ pub struct Exporter {
 }
 
 impl Exporter {
-    pub fn new(config: Config) -> Self {
-        let scraper = Arc::new(Scraper::new(&config));
+    pub fn new(config: Config) -> Result<Self> {
+        let scraper = Arc::new(Scraper::new(&config)?);
 
-        Self {
+        Ok(Self {
             socket_address: config.socket_addr,
             tls_config: config.tls_config,
             scraper,
-        }
+        })
     }
 
     pub async fn work(&self) {
@@ -48,7 +52,7 @@ impl Exporter {
     }
 }
 
-async fn scrape(scraper: Arc<Scraper>) -> Result<impl warp::Reply, Infallible> {
+async fn scrape(scraper: Arc<Scraper>) -> StdResult<impl warp::Reply, Infallible> {
     let registry = Registry::new();
     let status_opts = opts!(
         "aws_health_events_success",
