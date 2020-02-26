@@ -1,15 +1,18 @@
 # AWS Health Exporter
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/vladvasiliu/aws-health-exporter-rs.svg?style=flat)][docker hub]
+
 
 This is a Prometheus exporter for AWS Health events.
 
 ## Status
-This is a work in progress. For the time being it is usable, but the interface and functionality may change.
+It exports all events from AWS with event type "scheduled change" and "issue". While already used in production, it should not be considered battle tested.
 
 ### Known limitations
 
-Check the issues for open bugs / enhancements.
+Check the [issues][github issues] for open bugs / enhancements.
 
 Most notable limitations are:
+* No organization support - *[Issue #14](https://github.com/vladvasiliu/aws-health-exporter-rs/issues/14)*
 * Doesn't export process information on Windows (this is a limitation of the underlying [Prometheus library][prometheus-rust])
 * Attempt to bind to a used socket when using TLS panics instead of quitting gracefully. This is a limitation of the underlying [http][warp] library.
 
@@ -28,7 +31,11 @@ An image is available on [Docker Hub]. To run it:
 docker run --rm -d --name aws-health-exporter vladvasiliu/aws-health-exporter-rs:latest
 ```
 
-This accepts the same options as the binary.
+For help, pass the `-h` flag:
+
+```
+docker run --rm --name aws-health-exporter vladvasiliu/aws-health-exporter-rs:latest -h
+```
 
 ###  Building
 
@@ -94,6 +101,11 @@ The exporter exposes two endpoints:
 * Status of the AWS API call is reflected by `aws_health_events_success` metric.
 
 
+## Contributing
+
+Any contributions are welcome. Please open an issue or PR if you find any bugs or would like to propose an enhancement.
+
+
 ## Related projects
 
 * [Azure Health Exporter](https://github.com/FXinnovation/azure-health-exporter)
@@ -106,7 +118,7 @@ The reason I started a new project is two-fold:
 * I'm in the process of learning Rust and this looked like a good project.
 
 
-## License
+## License [![License](https://img.shields.io/github/license/vladvasiliu/aws-health-exporter-rs.svg?style=flat)](COPYING)
 
 This project is released under the terms of the GNU General Public License, version 3.
 Please see [`COPYING`](COPYING) for the full text of the license.
@@ -115,6 +127,7 @@ Please see [`COPYING`](COPYING) for the full text of the license.
 [aws api]: <https://docs.aws.amazon.com/health/latest/APIReference/API_DescribeEvents.html> "AWS API reference"
 [aws credentials best practices]: <https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html> "AWS access keys best practices"
 [docker hub]: <https://hub.docker.com/repository/docker/vladvasiliu/aws-health-exporter-rs> "Docker Hub"
+[github issues]: <https://github.com/vladvasiliu/aws-health-exporter-rs/issues> "GitHub Issues"
 [prometheus-rust]: <https://docs.rs/prometheus/> "Rust Prometheus documentation"
 [rusoto]: <https://github.com/rusoto/rusoto> "Rust AWS SDK"
 [tokio]: <https://tokio.rs/> "Tokio Homepage"

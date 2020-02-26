@@ -1,12 +1,11 @@
+use crate::config::{Config, TLS};
+use crate::scraper::Scraper;
 use log::warn;
 use prometheus::{gather, opts, Encoder, IntGauge, Registry, TextEncoder};
 use std::convert::Infallible;
 use std::net::SocketAddr;
-use warp::Filter;
-
-use crate::config::{Config, TLS};
-use crate::scraper::Scraper;
 use std::sync::Arc;
+use warp::Filter;
 
 pub struct Exporter {
     socket_address: SocketAddr,
