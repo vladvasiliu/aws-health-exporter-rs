@@ -1,4 +1,5 @@
 # AWS Health Exporter
+[![CI](https://github.com/vladvasiliu/aws-health-exporter-rs/workflows/CI/badge.svg)](https://github.com/vladvasiliu/aws-health-exporter-rs/actions?query=workflow%3ACI)
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/vladvasiliu/aws-health-exporter-rs.svg?style=flat)][docker hub]
 [![License](https://img.shields.io/github/license/vladvasiliu/aws-health-exporter-rs.svg?style=flat)](COPYING)
 
