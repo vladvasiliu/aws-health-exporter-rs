@@ -168,44 +168,44 @@ impl Config {
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result = format!("Starting {} v{}\n\n", self.name, self.version);
-        result.push_str(&format!("Listening on:\t{}\n", self.socket_addr));
-        result.push_str(&format!("Log level:\t\t{}\n", self.log_level));
+        result.push_str(&format!("{:<18}{}\n", "Listening on:", self.socket_addr));
+        result.push_str(&format!("{:<18}{}\n", "Log level:", self.log_level));
         if let Some(role) = &self.role {
-            result.push_str(&format!("Role: {}\n", role));
+            result.push_str(&format!("{:<18}{}\n", "Role:", role));
         }
         if let Some(role_region) = &self.role_region {
-            result.push_str(&format!("Role STS Endpoint: {}", role_region));
+            result.push_str(&format!("{:<18} {}", "Role STS Endpoint:", role_region));
         }
 
-        result.push_str("TLS config:");
+        result.push_str(&format!("{:<18}", "TLS config:"));
         if let Some(tls_config) = &self.tls_config {
             result.push_str("\n");
-            result.push_str(&format!("\tKey file:\t\t\t{}\n", tls_config.key));
-            result.push_str(&format!("\tCertificate file:\t{}\n", tls_config.cert));
+            result.push_str(&format!("  Key file:         {}\n", tls_config.key));
+            result.push_str(&format!("  Certificate file: {}\n", tls_config.cert));
         } else {
-            result.push_str("\t\tOff\n");
+            result.push_str("Off\n");
         }
 
-        result.push_str("Regions:");
+        result.push_str(&format!("{:<18}", "Regions:"));
         match &self.regions {
             Some(regions) => {
                 result.push_str("\n");
                 for region in regions {
-                    result.push_str(&format!("\t* {}\n", region));
+                    result.push_str(&format!("  * {}\n", region));
                 }
             }
-            None => result.push_str("\t\tAll\n"),
+            None => result.push_str("All\n"),
         }
 
-        result.push_str("Services:");
+        result.push_str(&format!("{:<18}", "Services:"));
         match &self.services {
             Some(services) => {
                 result.push_str("\n");
                 for service in services {
-                    result.push_str(&format!("\t* {}\n", service));
+                    result.push_str(&format!("  * {}\n", service));
                 }
             }
-            None => result.push_str("\t\tAll\n"),
+            None => result.push_str("All\n"),
         }
         write!(f, "{}", result)
     }
