@@ -23,7 +23,7 @@ pub struct Config {
     pub role: Option<String>,
     pub role_region: Option<String>,
     pub tls_config: Option<TLS>,
-    version: String,
+    pub version: String,
     name: String,
 }
 

@@ -2,7 +2,9 @@ use crate::config::{Config, TLS};
 use crate::exporter::error::Result;
 use crate::scraper::Scraper;
 use log::warn;
-use prometheus::{gather, opts, register, Encoder, IntCounterVec, IntGauge, Registry, TextEncoder};
+use prometheus::{
+    gather, labels, opts, register, Encoder, IntCounterVec, IntGauge, Registry, TextEncoder,
+};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::result::Result as StdResult;
@@ -22,6 +24,7 @@ impl Exporter {
     pub fn new(config: Config) -> Result<Self> {
         let scraper = Arc::new(Scraper::new(&config)?);
         let exporter_metrics = Arc::new(create_exporter_metrics()?);
+        create_info_metric(&config)?;
 
         Ok(Self {
             socket_address: config.socket_addr,
@@ -55,6 +58,18 @@ impl Exporter {
             None => server.try_bind(self.socket_address).await,
         }
     }
+}
+
+fn create_info_metric(config: &Config) -> Result<()> {
+    let metric_opts = opts!(
+        "aws_health_exporter_info",
+        "Exporter information",
+        labels! {"version" => &config.version,}
+    );
+    let metric = IntGauge::with_opts(metric_opts).unwrap();
+    metric.set(1);
+    register(Box::new(metric))?;
+    Ok(())
 }
 
 fn create_exporter_metrics() -> Result<IntCounterVec> {
