@@ -5,6 +5,9 @@ mod scraper;
 use crate::exporter::Exporter;
 use log::error;
 
+#[macro_use]
+extern crate lazy_static;
+
 #[tokio::main]
 async fn main() {
     let config = config::Config::from_args();

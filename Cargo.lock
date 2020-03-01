@@ -83,6 +83,7 @@ dependencies = [
  "chrono",
  "clap",
  "fern",
+ "lazy_static",
  "log 0.4.8",
  "prometheus",
  "regex",

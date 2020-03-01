@@ -1,6 +1,7 @@
 use crate::config::{Config, TLS};
 use crate::exporter::error::Result;
 use crate::scraper::Scraper;
+use clap::crate_version;
 use log::warn;
 use prometheus::{
     gather, labels, opts, register, Encoder, IntCounterVec, IntGauge, Registry, TextEncoder,
@@ -37,7 +38,7 @@ impl Exporter {
     pub async fn work(&self) {
         let scraper = self.scraper.clone();
         let metrics_family = self.exporter_metrics.clone();
-        let home = warp::path::end().map(|| warp::reply::html(HOME_PAGE));
+        let home = warp::path::end().map(|| warp::reply::html(HOME_PAGE.as_str()));
         let status = warp::path("status").map(|| warp::reply::html(STATUS_PAGE));
         let metrics = warp::path("metrics").and_then(move || {
             let scraper = scraper.clone();
@@ -120,16 +121,23 @@ async fn scrape(
     Ok(String::from_utf8(buffer).unwrap())
 }
 
-static HOME_PAGE: &str = "
-    <html>
-        <head />
+lazy_static! {
+    static ref HOME_PAGE: String = format!(
+        "
+        <html>
+        <head><title>AWS Health Exporter</title></head>
         <body>
+            AWS Health Exporter v{}
             <ul>
                 <li><a href=\"/status\">Exporter status</a></li>
                 <li><a href=\"/metrics\">Metrics</a></li>
             </ul>
         </body>
     </html>
-    ";
+    ",
+        crate_version!()
+    );
+}
 
-static STATUS_PAGE: &str = "<html><head /><body>Ok</body></html>";
+static STATUS_PAGE: &str =
+    "<html><head><title>AWS Health Exporter</title></head><body>Ok</body></html>";
