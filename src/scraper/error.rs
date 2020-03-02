@@ -1,7 +1,7 @@
 use prometheus::Error as PromError;
 use rusoto_core::{request::TlsError, RusotoError};
 use rusoto_credential::CredentialsError;
-use rusoto_health::DescribeEventsError;
+use rusoto_health::{DescribeEventsError, DescribeEventsForOrganizationError};
 use rusoto_signature::region::ParseRegionError;
 use std::{fmt, result::Result as StdResult};
 
@@ -10,6 +10,7 @@ pub type Result<T> = StdResult<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     DescribeEventsError(RusotoError<DescribeEventsError>),
+    DescribeEventsForOrganizationError(RusotoError<DescribeEventsForOrganizationError>),
     InvalidRegion(ParseRegionError),
     InvalidCredentials(CredentialsError),
     TlsError(TlsError),
@@ -25,6 +26,12 @@ impl From<ParseRegionError> for Error {
 impl From<RusotoError<DescribeEventsError>> for Error {
     fn from(err: RusotoError<DescribeEventsError>) -> Self {
         Self::DescribeEventsError(err)
+    }
+}
+
+impl From<RusotoError<DescribeEventsForOrganizationError>> for Error {
+    fn from(err: RusotoError<DescribeEventsForOrganizationError>) -> Self {
+        Self::DescribeEventsForOrganizationError(err)
     }
 }
 
@@ -50,6 +57,7 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DescribeEventsError(err) => write!(f, "{}", err),
+            Self::DescribeEventsForOrganizationError(err) => write!(f, "{}", err),
             Self::InvalidRegion(err) => write!(f, "{}", err),
             Self::PromError(err) => write!(f, "{}", err),
             Self::TlsError(err) => write!(f, "{}", err),
