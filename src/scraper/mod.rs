@@ -1,6 +1,9 @@
 use prometheus::{opts, IntGaugeVec};
 use rusoto_core::{HttpClient, Region};
-use rusoto_health::{AWSHealth, AWSHealthClient, DescribeEventsRequest, Event, EventFilter};
+use rusoto_health::{
+    AWSHealth, AWSHealthClient, DescribeEventsForOrganizationRequest, DescribeEventsRequest, Event,
+    EventFilter, OrganizationEvent, OrganizationEventFilter,
+};
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 use std::collections::HashMap;
 use std::default::Default;
@@ -105,27 +108,110 @@ impl Scraper {
         Ok(event_metrics)
     }
 
-    fn handle_events(&self, events: Vec<Event>, metric_family: &IntGaugeVec) -> Result<()> {
+    pub async fn describe_organization_events(&self) -> Result<IntGaugeVec> {
+        let opts = opts!("aws_health_events", "A list of AWS Health events");
+        let labels = [
+            "availability_zone",
+            "event_type_category",
+            "event_type_code",
+            "region",
+            "service",
+            "status",
+        ];
+        let event_metrics = IntGaugeVec::new(opts, &labels)?;
+
+        let mut next_token: Option<String> = None;
+        let filter = Some(OrganizationEventFilter {
+            regions: self.regions.to_owned(),
+            services: self.services.to_owned(),
+            event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
+            ..Default::default()
+        });
+
+        loop {
+            let request = DescribeEventsForOrganizationRequest {
+                filter: filter.to_owned(),
+                locale: self.locale.to_owned(),
+                max_results: None,
+                next_token: next_token.to_owned(),
+            };
+
+            let describe_events_response = self
+                .client
+                .describe_events_for_organization(request)
+                .await
+                .unwrap();
+            if let Some(events) = describe_events_response.events {
+                self.handle_events(events, &event_metrics)?;
+            }
+            match describe_events_response.next_token {
+                Some(token) => next_token = Some(token),
+                None => break,
+            }
+        }
+
+        Ok(event_metrics)
+    }
+
+    fn handle_events<T: GenericEvent>(
+        &self,
+        events: Vec<T>,
+        metric_family: &IntGaugeVec,
+    ) -> Result<()> {
         for event in events {
-            let mut label_map: HashMap<&str, &str> = HashMap::new();
-
-            let availability_zone = event.availability_zone.unwrap_or_default();
-            let region = event.region.unwrap_or_default();
-            let service = event.service.unwrap_or_default();
-            let event_type_category = event.event_type_category.unwrap_or_default();
-            let event_type_code = event.event_type_code.unwrap_or_default();
-            let status = event.status_code.unwrap_or_default();
-
-            label_map.insert("availability_zone", &availability_zone);
-            label_map.insert("event_type_category", &event_type_category);
-            label_map.insert("event_type_code", &event_type_code);
-            label_map.insert("region", &region);
-            label_map.insert("service", &service);
-            label_map.insert("status", &status);
+            let fields = event.get_fields();
+            let label_map: HashMap<&str, &str> =
+                fields.iter().map(|(k, v)| (*k, v.as_str())).collect();
 
             let metric = metric_family.get_metric_with(&label_map)?;
             metric.set(1);
         }
         Ok(())
+    }
+}
+
+trait GenericEvent {
+    fn get_fields(&self) -> HashMap<&str, String>;
+}
+
+impl GenericEvent for Event {
+    fn get_fields(&self) -> HashMap<&str, String> {
+        let mut label_map: HashMap<&str, String> = HashMap::new();
+
+        let availability_zone = self.availability_zone.clone().unwrap_or_default();
+        let region = self.region.clone().unwrap_or_default();
+        let service = self.service.clone().unwrap_or_default();
+        let event_type_category = self.event_type_category.clone().unwrap_or_default();
+        let event_type_code = self.event_type_code.clone().unwrap_or_default();
+        let status = self.status_code.clone().unwrap_or_default();
+
+        label_map.insert("availability_zone", availability_zone);
+        label_map.insert("event_type_category", event_type_category);
+        label_map.insert("event_type_code", event_type_code);
+        label_map.insert("region", region);
+        label_map.insert("service", service);
+        label_map.insert("status", status);
+
+        label_map
+    }
+}
+
+impl GenericEvent for OrganizationEvent {
+    fn get_fields(&self) -> HashMap<&str, String> {
+        let mut label_map: HashMap<&str, String> = HashMap::new();
+
+        let region = self.region.clone().unwrap_or_default();
+        let service = self.service.clone().unwrap_or_default();
+        let event_type_category = self.event_type_category.clone().unwrap_or_default();
+        let event_type_code = self.event_type_code.clone().unwrap_or_default();
+        let status = self.status_code.clone().unwrap_or_default();
+
+        label_map.insert("event_type_category", event_type_category);
+        label_map.insert("event_type_code", event_type_code);
+        label_map.insert("region", region);
+        label_map.insert("service", service);
+        label_map.insert("status", status);
+
+        label_map
     }
 }
