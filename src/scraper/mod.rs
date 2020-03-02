@@ -1,7 +1,8 @@
 use prometheus::{opts, IntGaugeVec};
 use rusoto_core::{HttpClient, Region};
 use rusoto_health::{
-    AWSHealth, AWSHealthClient, DescribeEventsForOrganizationRequest, DescribeEventsRequest, Event,
+    AWSHealth, AWSHealthClient, DescribeEventsForOrganizationRequest,
+    DescribeEventsForOrganizationResponse, DescribeEventsRequest, DescribeEventsResponse, Event,
     EventFilter, OrganizationEvent, OrganizationEventFilter,
 };
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
@@ -97,7 +98,7 @@ impl Scraper {
 
             let describe_events_response = self.client.describe_events(request).await?;
             if let Some(events) = describe_events_response.events {
-                self.handle_events(events, &event_metrics)?;
+                handle_events(events, &event_metrics)?;
             }
             match describe_events_response.next_token {
                 Some(token) => next_token = Some(token),
@@ -139,10 +140,9 @@ impl Scraper {
             let describe_events_response = self
                 .client
                 .describe_events_for_organization(request)
-                .await
-                .unwrap();
+                .await?;
             if let Some(events) = describe_events_response.events {
-                self.handle_events(events, &event_metrics)?;
+                handle_events(events, &event_metrics)?;
             }
             match describe_events_response.next_token {
                 Some(token) => next_token = Some(token),
@@ -152,18 +152,14 @@ impl Scraper {
 
         Ok(event_metrics)
     }
+}
 
-    fn handle_events<T: GenericEvent>(
-        &self,
-        events: Vec<T>,
-        metric_family: &IntGaugeVec,
-    ) -> Result<()> {
-        for event in events {
-            let metric = metric_family.get_metric_with(&event.get_fields())?;
-            metric.set(1);
-        }
-        Ok(())
+fn handle_events<T: GenericEvent>(events: Vec<T>, metric_family: &IntGaugeVec) -> Result<()> {
+    for event in events {
+        let metric = metric_family.get_metric_with(&event.get_fields())?;
+        metric.set(1);
     }
+    Ok(())
 }
 
 trait GenericEvent {
