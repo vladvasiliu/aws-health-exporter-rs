@@ -159,11 +159,7 @@ impl Scraper {
         metric_family: &IntGaugeVec,
     ) -> Result<()> {
         for event in events {
-            let fields = event.get_fields();
-            let label_map: HashMap<&str, &str> =
-                fields.iter().map(|(k, v)| (*k, v.as_str())).collect();
-
-            let metric = metric_family.get_metric_with(&label_map)?;
+            let metric = metric_family.get_metric_with(&event.get_fields())?;
             metric.set(1);
         }
         Ok(())
@@ -171,19 +167,19 @@ impl Scraper {
 }
 
 trait GenericEvent {
-    fn get_fields(&self) -> HashMap<&str, String>;
+    fn get_fields(&self) -> HashMap<&str, &str>;
 }
 
 impl GenericEvent for Event {
-    fn get_fields(&self) -> HashMap<&str, String> {
-        let mut label_map: HashMap<&str, String> = HashMap::new();
+    fn get_fields(&self) -> HashMap<&str, &str> {
+        let mut label_map: HashMap<&str, &str> = HashMap::new();
 
-        let availability_zone = self.availability_zone.clone().unwrap_or_default();
-        let region = self.region.clone().unwrap_or_default();
-        let service = self.service.clone().unwrap_or_default();
-        let event_type_category = self.event_type_category.clone().unwrap_or_default();
-        let event_type_code = self.event_type_code.clone().unwrap_or_default();
-        let status = self.status_code.clone().unwrap_or_default();
+        let availability_zone = self.availability_zone.as_ref().map_or("", String::as_str);
+        let region = self.region.as_ref().map_or("", String::as_str);
+        let service = self.service.as_ref().map_or("", String::as_str);
+        let event_type_category = self.event_type_category.as_ref().map_or("", String::as_str);
+        let event_type_code = self.event_type_code.as_ref().map_or("", String::as_str);
+        let status = self.status_code.as_ref().map_or("", String::as_str);
 
         label_map.insert("availability_zone", availability_zone);
         label_map.insert("event_type_category", event_type_category);
@@ -197,14 +193,14 @@ impl GenericEvent for Event {
 }
 
 impl GenericEvent for OrganizationEvent {
-    fn get_fields(&self) -> HashMap<&str, String> {
-        let mut label_map: HashMap<&str, String> = HashMap::new();
+    fn get_fields(&self) -> HashMap<&str, &str> {
+        let mut label_map: HashMap<&str, &str> = HashMap::new();
 
-        let region = self.region.clone().unwrap_or_default();
-        let service = self.service.clone().unwrap_or_default();
-        let event_type_category = self.event_type_category.clone().unwrap_or_default();
-        let event_type_code = self.event_type_code.clone().unwrap_or_default();
-        let status = self.status_code.clone().unwrap_or_default();
+        let region = self.region.as_ref().map_or("", String::as_str);
+        let service = self.service.as_ref().map_or("", String::as_str);
+        let event_type_category = self.event_type_category.as_ref().map_or("", String::as_str);
+        let event_type_code = self.event_type_code.as_ref().map_or("", String::as_str);
+        let status = self.status_code.as_ref().map_or("", String::as_str);
 
         label_map.insert("event_type_category", event_type_category);
         label_map.insert("event_type_code", event_type_code);
