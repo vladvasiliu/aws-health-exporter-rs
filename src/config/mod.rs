@@ -174,6 +174,20 @@ impl Config {
             use_organization,
         }
     }
+
+    fn display_tuples(&self) -> Vec<(&'static str, String)> {
+        let mut result = vec![];
+        result.push(("Listening on", self.socket_addr.to_string()));
+        result.push(("Log level", self.log_level.to_string()));
+        if let Some(role) = &self.role {
+            result.push(("Role:", role.to_owned()));
+        }
+        if let Some(role_region) = &self.role_region {
+            result.push(("Role STS Endpoint", role_region.to_owned()));
+        }
+
+        result
+    }
 }
 
 impl fmt::Display for Config {
