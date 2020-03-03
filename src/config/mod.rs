@@ -24,6 +24,7 @@ pub struct Config {
     pub role_region: Option<String>,
     pub tls_config: Option<TLS>,
     pub version: String,
+    pub use_organization: bool,
     name: String,
 }
 
@@ -100,6 +101,13 @@ impl Config {
                     .validator(validate_region),
             )
             .arg(
+                Arg::with_name("organization")
+                    .long("organization")
+                    .help("Query events for organization")
+                    .takes_value(false)
+                    .required(false),
+            )
+            .arg(
                 Arg::with_name("tls_key")
                     .long("tls-key")
                     .help("Path to TLS certificate key")
@@ -150,6 +158,8 @@ impl Config {
             _ => None,
         };
 
+        let use_organization = matches.is_present("organization");
+
         Self {
             /// Works because the argument is validated
             socket_addr: matches.value_of("listen_host").unwrap().parse().unwrap(),
@@ -161,23 +171,46 @@ impl Config {
             role: matches.value_of("role").map(|s| s.to_string()),
             role_region: matches.value_of("role_region").map(|s| s.to_string()),
             tls_config,
+            use_organization,
         }
     }
 }
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let width: usize = 20;
         let mut result = format!("Starting {} v{}\n\n", self.name, self.version);
-        result.push_str(&format!("{:<18}{}\n", "Listening on:", self.socket_addr));
-        result.push_str(&format!("{:<18}{}\n", "Log level:", self.log_level));
+        result.push_str(&format!(
+            "{:<width$}{}\n",
+            "Listening on:",
+            self.socket_addr,
+            width = width
+        ));
+        result.push_str(&format!(
+            "{:<width$}{}\n",
+            "Log level:",
+            self.log_level,
+            width = width
+        ));
         if let Some(role) = &self.role {
-            result.push_str(&format!("{:<18}{}\n", "Role:", role));
+            result.push_str(&format!("{:<width$}{}\n", "Role:", role, width = width));
         }
         if let Some(role_region) = &self.role_region {
-            result.push_str(&format!("{:<18} {}", "Role STS Endpoint:", role_region));
+            result.push_str(&format!(
+                "{:<width$} {}",
+                "Role STS Endpoint:",
+                role_region,
+                width = width
+            ));
         }
+        result.push_str(&format!(
+            "{:<width$}{}\n",
+            "Use organization:",
+            self.use_organization.to_string(),
+            width = width
+        ));
 
-        result.push_str(&format!("{:<18}", "TLS config:"));
+        result.push_str(&format!("{:<width$}", "TLS config:", width = width));
         if let Some(tls_config) = &self.tls_config {
             result.push_str("\n");
             result.push_str(&format!("  Key file:         {}\n", tls_config.key));
@@ -186,7 +219,7 @@ impl fmt::Display for Config {
             result.push_str("Off\n");
         }
 
-        result.push_str(&format!("{:<18}", "Regions:"));
+        result.push_str(&format!("{:<width$}", "Regions:", width = width));
         match &self.regions {
             Some(regions) => {
                 result.push_str("\n");
@@ -197,7 +230,7 @@ impl fmt::Display for Config {
             None => result.push_str("All\n"),
         }
 
-        result.push_str(&format!("{:<18}", "Services:"));
+        result.push_str(&format!("{:<width$}", "Services:", width = width));
         match &self.services {
             Some(services) => {
                 result.push_str("\n");
