@@ -81,12 +81,13 @@ impl Scraper {
         let event_metrics = IntGaugeVec::new(opts, &labels)?;
 
         let mut next_token: Option<String> = None;
-        let filter = Some(EventFilter {
+        let generic_filter = GenericFilter {
             regions: self.regions.to_owned(),
             services: self.services.to_owned(),
             event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
-            ..Default::default()
-        });
+        };
+
+        let filter = Some(EventFilter::from(generic_filter));
 
         loop {
             let request = DescribeEventsRequest {
@@ -207,3 +208,38 @@ impl GenericEvent for OrganizationEvent {
         label_map
     }
 }
+
+struct GenericFilter {
+    regions: Option<Vec<String>>,
+    services: Option<Vec<String>>,
+    event_type_categories: Option<Vec<String>>,
+}
+
+impl From<GenericFilter> for EventFilter {
+    fn from(generic_filter: GenericFilter) -> EventFilter {
+        EventFilter {
+            regions: generic_filter.regions,
+            services: generic_filter.services,
+            event_type_categories: generic_filter.event_type_categories,
+            ..Default::default()
+        }
+    }
+}
+
+struct GenericRequest {
+    filter: Option<GenericFilter>,
+    locale: Option<String>,
+    max_results: Option<i64>,
+    next_token: Option<String>,
+}
+
+// impl From<GenericRequest> for DescribeEventsRequest {
+//     fn from(generic_request: GenericRequest) -> DescribeEventsRequest {
+//         DescribeEventsRequest {
+//             filter: generic_request.filter.into(),
+//             locale: generic_request.locale,
+//             max_results: generic_request.max_results,
+//             next_token: generic_request.next_token,
+//         }
+//     }
+// }
