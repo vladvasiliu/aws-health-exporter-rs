@@ -1,7 +1,6 @@
 use clap::{crate_authors, crate_description, crate_name, crate_version, App, AppSettings, Arg};
 use regex::Regex;
 use rusoto_core::Region;
-use std::fmt;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::str::FromStr;
@@ -18,13 +17,13 @@ pub struct TLS {
 pub struct Config {
     pub socket_addr: SocketAddr,
     pub log_level: log::LevelFilter,
-    pub regions: Option<Vec<String>>,
-    pub services: Option<Vec<String>>,
     pub role: Option<String>,
     pub role_region: Option<String>,
+    pub use_organization: bool,
+    pub regions: Option<Vec<String>>,
+    pub services: Option<Vec<String>>,
     pub tls_config: Option<TLS>,
     pub version: String,
-    pub use_organization: bool,
     name: String,
 }
 
@@ -173,88 +172,6 @@ impl Config {
             tls_config,
             use_organization,
         }
-    }
-
-    fn display_tuples(&self) -> Vec<(&'static str, String)> {
-        let mut result = vec![];
-        result.push(("Listening on", self.socket_addr.to_string()));
-        result.push(("Log level", self.log_level.to_string()));
-        if let Some(role) = &self.role {
-            result.push(("Role:", role.to_owned()));
-        }
-        if let Some(role_region) = &self.role_region {
-            result.push(("Role STS Endpoint", role_region.to_owned()));
-        }
-
-        result
-    }
-}
-
-impl fmt::Display for Config {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let width: usize = 20;
-        let mut result = format!("Starting {} v{}\n\n", self.name, self.version);
-        result.push_str(&format!(
-            "{:<width$}{}\n",
-            "Listening on:",
-            self.socket_addr,
-            width = width
-        ));
-        result.push_str(&format!(
-            "{:<width$}{}\n",
-            "Log level:",
-            self.log_level,
-            width = width
-        ));
-        if let Some(role) = &self.role {
-            result.push_str(&format!("{:<width$}{}\n", "Role:", role, width = width));
-        }
-        if let Some(role_region) = &self.role_region {
-            result.push_str(&format!(
-                "{:<width$} {}",
-                "Role STS Endpoint:",
-                role_region,
-                width = width
-            ));
-        }
-        result.push_str(&format!(
-            "{:<width$}{}\n",
-            "Use organization:",
-            self.use_organization.to_string(),
-            width = width
-        ));
-
-        result.push_str(&format!("{:<width$}", "TLS config:", width = width));
-        if let Some(tls_config) = &self.tls_config {
-            result.push_str("\n");
-            result.push_str(&format!("  Key file:         {}\n", tls_config.key));
-            result.push_str(&format!("  Certificate file: {}\n", tls_config.cert));
-        } else {
-            result.push_str("Off\n");
-        }
-
-        result.push_str(&format!("{:<width$}", "Regions:", width = width));
-        match &self.regions {
-            Some(regions) => {
-                result.push_str("\n");
-                for region in regions {
-                    result.push_str(&format!("  * {}\n", region));
-                }
-            }
-            None => result.push_str("All\n"),
-        }
-
-        result.push_str(&format!("{:<width$}", "Services:", width = width));
-        match &self.services {
-            Some(services) => {
-                result.push_str("\n");
-                for service in services {
-                    result.push_str(&format!("  * {}\n", service));
-                }
-            }
-            None => result.push_str("All\n"),
-        }
-        write!(f, "{}", result)
     }
 }
 

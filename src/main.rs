@@ -3,7 +3,7 @@ mod exporter;
 mod scraper;
 
 use crate::exporter::Exporter;
-use log::error;
+use log::{error, info};
 
 #[macro_use]
 extern crate lazy_static;
@@ -11,8 +11,8 @@ extern crate lazy_static;
 #[tokio::main]
 async fn main() {
     let config = config::Config::from_args();
-    println!("{}", config);
     setup_logger(config.log_level).unwrap();
+    info!("Starting AWS Health Exporter v{}", config.version);
 
     match Exporter::new(config) {
         Ok(exporter) => exporter.work().await,
