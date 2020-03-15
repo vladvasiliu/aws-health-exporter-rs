@@ -22,6 +22,7 @@ pub(crate) struct Scraper {
     regions: Option<Vec<String>>,
     services: Option<Vec<String>>,
     locale: Option<String>,
+    use_organization: bool,
 }
 
 impl Scraper {
@@ -65,88 +66,64 @@ impl Scraper {
             regions: config.regions.to_owned(),
             locale: Some("en".into()),
             services: config.services.to_owned(),
+            use_organization: config.use_organization,
         })
     }
 
     pub async fn describe_events(&self) -> Result<IntGaugeVec> {
         let opts = opts!("aws_health_events", "A list of AWS Health events");
-        let labels = [
-            "availability_zone",
-            "event_type_category",
-            "event_type_code",
-            "region",
-            "service",
-            "status",
-        ];
+        let labels = if self.use_organization {
+            vec![
+                "event_type_category",
+                "event_type_code",
+                "region",
+                "service",
+                "status",
+            ]
+        } else {
+            vec![
+                "availability_zone",
+                "event_type_category",
+                "event_type_code",
+                "region",
+                "service",
+                "status",
+            ]
+        };
         let event_metrics = IntGaugeVec::new(opts, &labels)?;
 
-        let mut next_token: Option<String> = None;
+        let next_token: Option<String> = None;
         let generic_filter = GenericFilter {
             regions: self.regions.to_owned(),
             services: self.services.to_owned(),
             event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
         };
 
-        let filter = Some(EventFilter::from(generic_filter));
+        let mut request = GenericRequest {
+            filter: Some(generic_filter),
+            locale: self.locale.to_owned(),
+            max_results: None,
+            next_token: next_token.to_owned(),
+        };
+
+        // let requester = self.make_requester();
 
         loop {
-            let request = DescribeEventsRequest {
-                filter: filter.to_owned(),
-                locale: self.locale.to_owned(),
-                max_results: None,
-                next_token: next_token.to_owned(),
+            let response: Box<dyn GenericResponse> = if self.use_organization {
+                let request = request.clone().into();
+                let response = self
+                    .client
+                    .describe_events_for_organization(request)
+                    .await?;
+                Box::new(response)
+            } else {
+                let request = request.clone().into();
+                let response = self.client.describe_events(request).await?;
+                Box::new(response)
             };
-
-            let describe_events_response = self.client.describe_events(request).await?;
-            if let Some(events) = describe_events_response.events {
-                handle_events(events, &event_metrics)?;
-            }
-            match describe_events_response.next_token {
-                Some(token) => next_token = Some(token),
-                None => break,
-            }
-        }
-
-        Ok(event_metrics)
-    }
-
-    pub async fn describe_organization_events(&self) -> Result<IntGaugeVec> {
-        let opts = opts!("aws_health_events", "A list of AWS Health events");
-        let labels = [
-            "availability_zone",
-            "event_type_category",
-            "event_type_code",
-            "region",
-            "service",
-            "status",
-        ];
-        let event_metrics = IntGaugeVec::new(opts, &labels)?;
-
-        let mut next_token: Option<String> = None;
-        let filter = Some(OrganizationEventFilter {
-            regions: self.regions.to_owned(),
-            services: self.services.to_owned(),
-            event_type_categories: Some(vec!["issue".to_string(), "scheduledChange".to_string()]),
-            ..Default::default()
-        });
-
-        loop {
-            let request = DescribeEventsForOrganizationRequest {
-                filter: filter.to_owned(),
-                locale: self.locale.to_owned(),
-                max_results: None,
-                next_token: next_token.to_owned(),
-            };
-
-            let describe_events_response = self
-                .client
-                .describe_events_for_organization(request)
-                .await?;
-            if let Some(events) = describe_events_response.events {
-                handle_events(events, &event_metrics)?;
-            }
-            match describe_events_response.next_token {
-                Some(token) => next_token = Some(token),
+            response.get_events(&event_metrics)?;
+            match response.get_next_token() {
+                Some(token) => request.next_token = Some(token),
                 None => break,
             }
         }
@@ -155,7 +132,7 @@ impl Scraper {
     }
 }
 
-fn handle_events<T: GenericEvent>(events: Vec<T>, metric_family: &IntGaugeVec) -> Result<()> {
+fn handle_events<T: GenericEvent>(events: &[T], metric_family: &IntGaugeVec) -> Result<()> {
     for event in events {
         let metric = metric_family.get_metric_with(&event.get_fields())?;
         metric.set(1);
@@ -209,6 +186,7 @@ impl GenericEvent for OrganizationEvent {
     }
 }
 
+#[derive(Clone)]
 struct GenericFilter {
     regions: Option<Vec<String>>,
     services: Option<Vec<String>>,
@@ -216,8 +194,8 @@ struct GenericFilter {
 }
 
 impl From<GenericFilter> for EventFilter {
-    fn from(generic_filter: GenericFilter) -> EventFilter {
-        EventFilter {
+    fn from(generic_filter: GenericFilter) -> Self {
+        Self {
             regions: generic_filter.regions,
             services: generic_filter.services,
             event_type_categories: generic_filter.event_type_categories,
@@ -226,6 +204,18 @@ impl From<GenericFilter> for EventFilter {
     }
 }
 
+impl From<GenericFilter> for OrganizationEventFilter {
+    fn from(generic_filter: GenericFilter) -> Self {
+        Self {
+            regions: generic_filter.regions,
+            services: generic_filter.services,
+            event_type_categories: generic_filter.event_type_categories,
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Clone)]
 struct GenericRequest {
     filter: Option<GenericFilter>,
     locale: Option<String>,
@@ -233,13 +223,55 @@ struct GenericRequest {
     next_token: Option<String>,
 }
 
-// impl From<GenericRequest> for DescribeEventsRequest {
-//     fn from(generic_request: GenericRequest) -> DescribeEventsRequest {
-//         DescribeEventsRequest {
-//             filter: generic_request.filter.into(),
-//             locale: generic_request.locale,
-//             max_results: generic_request.max_results,
-//             next_token: generic_request.next_token,
-//         }
-//     }
-// }
+impl From<GenericRequest> for DescribeEventsRequest {
+    fn from(generic_request: GenericRequest) -> Self {
+        Self {
+            filter: generic_request.filter.map(EventFilter::from),
+            locale: generic_request.locale,
+            max_results: generic_request.max_results,
+            next_token: generic_request.next_token,
+        }
+    }
+}
+
+impl From<GenericRequest> for DescribeEventsForOrganizationRequest {
+    fn from(generic_request: GenericRequest) -> Self {
+        Self {
+            filter: generic_request.filter.map(OrganizationEventFilter::from),
+            locale: generic_request.locale,
+            max_results: generic_request.max_results,
+            next_token: generic_request.next_token,
+        }
+    }
+}
+
+trait GenericResponse {
+    fn get_next_token(&self) -> Option<String>;
+    fn get_events(&self, metric_family: &IntGaugeVec) -> Result<()>;
+}
+
+impl GenericResponse for DescribeEventsResponse {
+    fn get_next_token(&self) -> Option<String> {
+        self.next_token.clone()
+    }
+
+    fn get_events(&self, metric_family: &IntGaugeVec) -> Result<()> {
+        if let Some(events) = &self.events {
+            handle_events(events, metric_family)?;
+        }
+        Ok(())
+    }
+}
+
+impl GenericResponse for DescribeEventsForOrganizationResponse {
+    fn get_next_token(&self) -> Option<String> {
+        self.next_token.clone()
+    }
+
+    fn get_events(&self, metric_family: &IntGaugeVec) -> Result<()> {
+        if let Some(events) = &self.events {
+            handle_events(events, metric_family)?;
+        }
+        Ok(())
+    }
+}
