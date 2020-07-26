@@ -136,17 +136,17 @@ impl Config {
             log::LevelFilter::Info
         };
 
-        let regions = matches.values_of_lossy("region").and_then(|mut regions| {
+        let regions = matches.values_of_lossy("region").map(|mut regions| {
             regions.push("global".to_string());
             regions.sort_unstable();
             regions.dedup();
-            Some(regions)
+            regions
         });
 
-        let services = matches.values_of_lossy("service").and_then(|mut services| {
+        let services = matches.values_of_lossy("service").map(|mut services| {
             services.sort_unstable();
             services.dedup();
-            Some(services)
+            services
         });
 
         let tls_config = match (matches.value_of("tls_key"), matches.value_of("tls_cert")) {
@@ -176,9 +176,11 @@ impl Config {
 }
 
 fn validate_ip(ip: String) -> Result<(), String> {
+    // The map at the end is required because Clap expects validators to return Result<(), String>.
+    // https://docs.rs/clap/2.33.1/clap/struct.Arg.html#method.validator
     ip.parse::<SocketAddr>()
-        .or_else(|err| Err(format!("{}", err)))
-        .and_then(|_| Ok(()))
+        .map_err(|err| format!("{}", err))
+        .map(|_| ())
 }
 
 fn validate_region(region: String) -> Result<(), String> {
@@ -187,7 +189,7 @@ fn validate_region(region: String) -> Result<(), String> {
     }
     Region::from_str(&region)
         .and(Ok(()))
-        .or_else(|err| Err(format!("{}", err)))
+        .map_err(|err| format!("{}", err))
 }
 
 /// Validates that a given AWS Role ARN looks OK

@@ -1,5 +1,6 @@
+use log::info;
 use prometheus::{opts, IntGaugeVec};
-use rusoto_core::{HttpClient, Region};
+use rusoto_core::{HttpClient, Region, RusotoError};
 use rusoto_health::{
     AWSHealth, AWSHealthClient, DescribeEventsForOrganizationRequest,
     DescribeEventsForOrganizationResponse, DescribeEventsRequest, DescribeEventsResponse, Event,
@@ -9,10 +10,14 @@ use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 use std::collections::HashMap;
 use std::default::Default;
 use std::str::FromStr;
+use std::time::Duration;
+use tokio::time::delay_for;
+use warp::http::StatusCode;
 
 pub(crate) mod error;
 use crate::config::Config;
 use error::Result;
+use rusoto_core::request::BufferedHttpResponse;
 
 // AWS Health API is only available on us-east-1
 static HEALTH_REGION: &str = "us-east-1";
@@ -106,20 +111,43 @@ impl Scraper {
             next_token: next_token.to_owned(),
         };
 
-        // let requester = self.make_requester();
-
+        // Implement a poor man's backoff
+        // As documented on "Handling errors / Error retries and exponential backoff"
+        // https://docs.aws.amazon.com/elastictranscoder/latest/developerguide/error-handling.html#api-retries
+        let mut retry: u32 = 0;
+        let wait_base: u32 = 2;
         loop {
+            if retry > 0 {
+                let delay = Duration::from_millis(50) * wait_base.pow(retry);
+                info!("Sleeping for {:#?}", delay);
+                delay_for(delay).await;
+            }
             let response: Box<dyn GenericResponse> = if self.use_organization {
                 let request = request.clone().into();
-                let response = self
-                    .client
-                    .describe_events_for_organization(request)
-                    .await?;
-                Box::new(response)
+                match self.client.describe_events_for_organization(request).await {
+                    Ok(response) => Box::new(response),
+                    Err(RusotoError::Unknown(BufferedHttpResponse {
+                        status: StatusCode::TOO_MANY_REQUESTS,
+                        ..
+                    })) => {
+                        retry += 1;
+                        continue;
+                    }
+                    Err(err) => return Err(err.into()),
+                }
             } else {
                 let request = request.clone().into();
-                let response = self.client.describe_events(request).await?;
-                Box::new(response)
+                match self.client.describe_events(request).await {
+                    Ok(response) => Box::new(response),
+                    Err(RusotoError::Unknown(BufferedHttpResponse {
+                        status: StatusCode::TOO_MANY_REQUESTS,
+                        ..
+                    })) => {
+                        retry += 1;
+                        continue;
+                    }
+                    Err(err) => return Err(err.into()),
+                }
             };
             response.get_events(&event_metrics)?;
             match response.get_next_token() {
