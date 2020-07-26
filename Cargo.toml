@@ -1,6 +1,6 @@
 [package]
 name = "aws_health_exporter"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Vlad Vasiliu"]
 description = "Prometheus exporter for AWS Health events."
 edition = "2018"
@@ -21,6 +21,6 @@ rusoto_credential = { version = "~0.45" }
 rusoto_health = { version = "~0.45" }
 rusoto_signature = { version = "~0.45" }
 rusoto_sts = { version = "~0.45" }
-prometheus = { version = "~0.9.0", features = ["process"] }
-tokio = { version = "^0.2", features = ["rt-core", "macros", "time"] }
+prometheus = { version = "~0.9", features = ["process"] }
+tokio = { version = "~0.2", features = ["rt-core", "macros", "time"] }
 warp = { version = "~0.2", features = ["tls"] }

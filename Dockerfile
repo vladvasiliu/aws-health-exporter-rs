@@ -1,11 +1,12 @@
-ARG BASE_IMAGE=ekidd/rust-musl-builder:latest
+FROM rust:1.45-buster as builder
 
-FROM ${BASE_IMAGE} AS builder
+WORKDIR /build
+COPY Cargo.toml .
+COPY Cargo.lock .
+COPY src src
+RUN cargo install --path .
 
-COPY . ./
-RUN cargo build --release
-
-FROM alpine:3.12
+FROM debian:buster
 
 LABEL description="Prometheus exporter for AWS Health"
 LABEL maintainer="Vlad Vasiliu <vladvasiliun@yahoo.fr>"
@@ -13,10 +14,7 @@ LABEL maintainer="Vlad Vasiliu <vladvasiliun@yahoo.fr>"
 ARG PORT=9679
 EXPOSE $PORT
 
-RUN apk --no-cache add ca-certificates
-COPY --from=builder \
-    /home/rust/src/target/x86_64-unknown-linux-musl/release/aws_health_exporter \
-    /usr/local/bin/
+RUN apt-get update && apt-get install -y openssl curl && rm -rf /var/lib/apt
+COPY --from=builder /usr/local/cargo/bin/aws_health_exporter /usr/local/bin/aws_health_exporter
 HEALTHCHECK --interval=5s --timeout=3s CMD curl -sS http://127.0.0.1:$PORT/status -o /dev/null || exit 1
-ENTRYPOINT ["/usr/local/bin/aws_health_exporter"]
-
+ENTRYPOINT ["aws_health_exporter"]
