@@ -9,12 +9,13 @@ This is a Prometheus exporter for AWS Health events.
 ## Status
 It exports all events from AWS with event type "scheduled change" and "issue". While already used in production, it should not be considered battle tested.
 
+See the [Changelog](CHANGELOG.md) for changes between versions.
+
 ### Known limitations
 
 Check the [issues][github issues] for open bugs / enhancements.
 
 Most notable limitations are:
-* No organization support - *[Issue #14](https://github.com/vladvasiliu/aws-health-exporter-rs/issues/14)*
 * Doesn't export process information on Windows (this is a limitation of the underlying [Prometheus library][prometheus-rust])
 * Attempt to bind to a used socket when using TLS panics instead of quitting gracefully. This is a limitation of the underlying [http][warp] library.
 
