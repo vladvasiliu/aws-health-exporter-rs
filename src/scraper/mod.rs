@@ -1,4 +1,4 @@
-use log::info;
+use log::debug;
 use prometheus::{opts, IntGaugeVec};
 use rusoto_core::{HttpClient, Region, RusotoError};
 use rusoto_health::{
@@ -122,7 +122,7 @@ impl Scraper {
             }
             if retry > 0 {
                 let delay = Duration::from_millis(50) * wait_base.pow(retry);
-                info!("Sleeping for {:#?}", delay);
+                debug!("Got TooManyRequests. Sleeping for {:#?}...", delay);
                 delay_for(delay).await;
             }
             let response: Box<dyn GenericResponse> = if self.use_organization {
