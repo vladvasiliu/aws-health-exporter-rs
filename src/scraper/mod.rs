@@ -16,7 +16,7 @@ use warp::http::StatusCode;
 
 pub(crate) mod error;
 use crate::config::Config;
-use error::Result;
+use error::{Error, Result};
 use rusoto_core::request::BufferedHttpResponse;
 
 // AWS Health API is only available on us-east-1
@@ -117,6 +117,9 @@ impl Scraper {
         let mut retry: u32 = 0;
         let wait_base: u32 = 2;
         loop {
+            if retry > 10 {
+                return Err(Error::TooManyRetries)
+            }
             if retry > 0 {
                 let delay = Duration::from_millis(50) * wait_base.pow(retry);
                 info!("Sleeping for {:#?}", delay);
@@ -154,6 +157,7 @@ impl Scraper {
                 Some(token) => request.next_token = Some(token),
                 None => break,
             }
+            retry = 0;
         }
 
         Ok(event_metrics)

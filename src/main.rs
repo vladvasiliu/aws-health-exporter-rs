@@ -12,8 +12,7 @@ extern crate lazy_static;
 async fn main() {
     let config = config::Config::from_args();
     setup_logger(config.log_level).unwrap();
-    info!("Starting AWS Health Exporter v{}", config.version);
-    info!("Listening on {}", config.socket_addr);
+    info!("AWS Health Exporter v{} - Listening on {}.", config.version, config.socket_addr);
 
     match Exporter::new(config) {
         Ok(exporter) => exporter.work().await,

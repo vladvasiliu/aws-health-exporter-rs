@@ -15,6 +15,7 @@ pub enum Error {
     InvalidCredentials(CredentialsError),
     TlsError(TlsError),
     PromError(PromError),
+    TooManyRetries,
 }
 
 impl From<ParseRegionError> for Error {
@@ -62,6 +63,7 @@ impl fmt::Display for Error {
             Self::PromError(err) => write!(f, "{}", err),
             Self::TlsError(err) => write!(f, "{}", err),
             Self::InvalidCredentials(err) => write!(f, "{}", err),
+            Self::TooManyRetries => write!(f, "API call was throttled too many times."),
         }
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "aws_health_exporter"
-version = "0.4.2"
+version = "0.4.3"
 authors = ["Vlad Vasiliu"]
 description = "Prometheus exporter for AWS Health events."
 edition = "2018"
