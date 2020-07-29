@@ -1,5 +1,11 @@
+use std::collections::HashMap;
+use std::default::Default;
+use std::str::FromStr;
+use std::time::Duration;
+
 use log::debug;
 use prometheus::{opts, IntGaugeVec};
+use rusoto_core::request::BufferedHttpResponse;
 use rusoto_core::{HttpClient, Region, RusotoError};
 use rusoto_health::{
     AWSHealth, AWSHealthClient, DescribeEventsForOrganizationRequest,
@@ -7,17 +13,14 @@ use rusoto_health::{
     EventFilter, OrganizationEvent, OrganizationEventFilter,
 };
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
-use std::collections::HashMap;
-use std::default::Default;
-use std::str::FromStr;
-use std::time::Duration;
 use tokio::time::delay_for;
 use warp::http::StatusCode;
 
-pub(crate) mod error;
-use crate::config::Config;
 use error::{Error, Result};
-use rusoto_core::request::BufferedHttpResponse;
+
+use crate::config::Config;
+
+pub(crate) mod error;
 
 // AWS Health API is only available on us-east-1
 static HEALTH_REGION: &str = "us-east-1";
@@ -118,7 +121,7 @@ impl Scraper {
         let wait_base: u32 = 2;
         loop {
             if retry > 10 {
-                return Err(Error::TooManyRetries)
+                return Err(Error::TooManyRetries);
             }
             if retry > 0 {
                 let delay = Duration::from_millis(50) * wait_base.pow(retry);

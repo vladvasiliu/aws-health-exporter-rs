@@ -1,18 +1,22 @@
+#[macro_use]
+extern crate lazy_static;
+
+use log::{error, info};
+
+use crate::exporter::Exporter;
+
 mod config;
 mod exporter;
 mod scraper;
-
-use crate::exporter::Exporter;
-use log::{error, info};
-
-#[macro_use]
-extern crate lazy_static;
 
 #[tokio::main]
 async fn main() {
     let config = config::Config::from_args();
     setup_logger(config.log_level).unwrap();
-    info!("AWS Health Exporter v{} - Listening on {}.", config.version, config.socket_addr);
+    info!(
+        "AWS Health Exporter v{} - Listening on {}.",
+        config.version, config.socket_addr
+    );
 
     match Exporter::new(config) {
         Ok(exporter) => exporter.work().await,

@@ -90,7 +90,7 @@ Credentials can be provided as follows:
 Please follow the [AWS credentials best practices].
 
 As organization health events can only be queried from the main account, you are likely to have to use a different role
-in that account for actually querying the API. The exporter can assume such a role with the `--role` flag. 
+in that account for actually querying the API. The exporter can assume such a role with the `--role` flag.
 
 As the organization account can easily do a lot of damage to connected accounts, please make sure that the assumed role
 only has the absolute minimum permissions.
@@ -232,7 +232,7 @@ The reason I started a new project is two-fold:
 * I'm in the process of learning Rust and this looked like a good project.
 
 
-## License 
+## License
 
 This project is released under the terms of the GNU General Public License, version 3.
 Please see [`COPYING`](COPYING) for the full text of the license.
