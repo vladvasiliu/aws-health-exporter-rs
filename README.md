@@ -129,7 +129,7 @@ Please see [`COPYING`](COPYING) for the full text of the license.
 
 [aws api]: <https://docs.aws.amazon.com/health/latest/APIReference/API_DescribeEvents.html> "AWS API reference"
 [aws credentials best practices]: <https://docs.aws.amazon.com/general/latest/gr/aws-access-keys-best-practices.html> "AWS access keys best practices"
-[docker hub]: <https://hub.docker.com/repository/docker/vladvasiliu/aws-health-exporter-rs> "Docker Hub"
+[docker hub]: <https://hub.docker.com/r/vladvasiliu/aws-health-exporter-rs> "Docker Hub"
 [github issues]: <https://github.com/vladvasiliu/aws-health-exporter-rs/issues> "GitHub Issues"
 [prometheus-rust]: <https://docs.rs/prometheus/> "Rust Prometheus documentation"
 [rusoto]: <https://github.com/rusoto/rusoto> "Rust AWS SDK"
