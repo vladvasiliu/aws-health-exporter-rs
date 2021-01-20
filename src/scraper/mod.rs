@@ -13,7 +13,7 @@ use rusoto_health::{
     EventFilter, OrganizationEvent, OrganizationEventFilter,
 };
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
-use tokio::time::delay_for;
+use tokio::time::sleep;
 use warp::http::StatusCode;
 
 use error::{Error, Result};
@@ -126,7 +126,7 @@ impl Scraper {
             if retry > 0 {
                 let delay = Duration::from_millis(50) * wait_base.pow(retry);
                 debug!("Got TooManyRequests. Sleeping for {:#?}...", delay);
-                delay_for(delay).await;
+                sleep(delay).await;
             }
             let response: Box<dyn GenericResponse> = if self.use_organization {
                 let request = request.clone().into();
