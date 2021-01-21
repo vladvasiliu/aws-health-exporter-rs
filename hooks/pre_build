@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 
-GIT_TAG=$(git rev-parse --short HEAD)
+GIT_HASH=$(git rev-parse --short HEAD)
 VERSION=$(grep "^version = " Cargo.toml | sed -nr "s/.*\"(.*)\"/\1/p")
-DATE=$(date --rfc-3339=seconds)
+BUILD_DATE=$(date --rfc-3339=seconds)
 
-sed -i "1iARG GIT_TAG=\"${GIT_TAG}\"" Dockerfile
+sed -i "1iARG GIT_HASH=\"${GIT_HASH}\"" Dockerfile
 sed -i "1iARG VERSION=\"${VERSION}\"" Dockerfile
-sed -i "1iARG DATE=\"${DATE}\"" Dockerfile
+sed -i "1iARG BUILD_DATE=\"${BUILD_DATE}\"" Dockerfile
