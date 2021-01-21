@@ -7,11 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 - 2021.01.20
 
-No user-facing changes.
+* Added opencontainer labels to Docker.
 
 ### Internal changes
 
-* Updated dependencies
+* Build a static binary in Docker with [rust-musl-builder](https://github.com/emk/rust-musl-builder)
+* Use alpine as running image.
+* Updated to tokio 1.0 / warp 0.3 / prometheus 0.11
 
 ## 0.4.4 - 2020-07-28
 

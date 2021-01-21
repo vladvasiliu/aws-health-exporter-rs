@@ -1,16 +1,30 @@
-FROM rust:1.49-buster as builder
+ARG BASE_IMAGE=ekidd/rust-musl-builder:1.49.0
+ARG RUN_IMAGE=alpine:3.13.0
 
-WORKDIR /build
-COPY Cargo.toml .
-COPY Cargo.lock .
-COPY src src
-RUN cargo install --path .
+FROM ${BASE_IMAGE} AS builder
 
-FROM debian:buster-slim
+ADD --chown=rust:rust . ./
+RUN cargo build --release
 
-LABEL description="Prometheus exporter for AWS Health"
-LABEL maintainer="Vlad Vasiliu <vladvasiliun@yahoo.fr>"
+FROM ${RUN_IMAGE}
 
-RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt
-COPY --from=builder /usr/local/cargo/bin/aws_health_exporter /usr/local/bin/aws_health_exporter
+ARG     VERSION
+ARG     BUILD_DATE
+ARG     GIT_HASH
+
+LABEL org.opencontainers.image.version="$VERSION"
+LABEL org.opencontainers.image.created="$BUILD_DATE"
+LABEL org.opencontainers.image.revision="$GIT_HASH"
+LABEL org.opencontainers.image.title="AWS Health Exporter"
+LABEL org.opencontainers.image.description="Export AWS health events to Prometheus"
+LABEL org.opencontainers.image.vendor="Vlad Vasiliu"
+LABEL org.opencontainers.image.source="https://github.com/vladvasiliu/aws-health-exporter-rs"
+LABEL org.opencontainers.image.authors="Vlad Vasiliu"
+LABEL org.opencontainers.image.url="https://github.com/vladvasiliu/aws-health-exporter-rs"
+
+RUN apk --no-cache add ca-certificates
+COPY --from=builder \
+    /home/rust/src/target/x86_64-unknown-linux-musl/release/aws_health_exporter \
+    /usr/local/bin/
+
 ENTRYPOINT ["aws_health_exporter"]
