@@ -91,7 +91,6 @@ Sessionx.vim
 
 # Temporary
 .netrwhist
-*~
 # Auto-generated tag files
 tags
 # Persistent undo
@@ -181,3 +180,4 @@ fabric.properties
 # Local History for Visual Studio Code
 .history/
 
+/.idea/aws.xml
