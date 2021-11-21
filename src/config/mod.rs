@@ -16,7 +16,6 @@ pub struct TLS {
 #[derive(Debug)]
 pub struct Config {
     pub socket_addr: SocketAddr,
-    pub log_level: log::LevelFilter,
     pub role: Option<String>,
     pub role_region: Option<String>,
     pub use_organization: bool,
@@ -126,16 +125,6 @@ impl Config {
             )
             .get_matches();
 
-        let log_level = if matches.occurrences_of("debug") >= 2 {
-            log::LevelFilter::Trace
-        } else if cfg!(debug_assertions) || matches.occurrences_of("debug") == 1 {
-            log::LevelFilter::Debug
-        } else if matches.is_present("quiet") {
-            log::LevelFilter::Warn
-        } else {
-            log::LevelFilter::Info
-        };
-
         let regions = matches.values_of_lossy("region").map(|mut regions| {
             regions.push("global".to_string());
             regions.sort_unstable();
@@ -162,7 +151,6 @@ impl Config {
         Self {
             /// Works because the argument is validated
             socket_addr: matches.value_of("listen_host").unwrap().parse().unwrap(),
-            log_level,
             version: crate_version!().to_string(),
             name: crate_name!().to_string(),
             regions,

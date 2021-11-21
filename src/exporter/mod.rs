@@ -2,7 +2,6 @@ use crate::config::{Config, TLS};
 use crate::exporter::error::Result;
 use crate::scraper::Scraper;
 use clap::crate_version;
-use log::warn;
 use prometheus::{
     gather, labels, opts, register, Encoder, IntCounterVec, IntGauge, Registry, TextEncoder,
 };
@@ -10,6 +9,7 @@ use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::result::Result as StdResult;
 use std::sync::Arc;
+use tracing::warn;
 use warp::Filter;
 
 mod error;

@@ -1,6 +1,6 @@
 [package]
 name = "aws_health_exporter"
-version = "0.6.0"
+version = "0.6.0-alpha.1"
 authors = ["Vlad Vasiliu"]
 description = "Prometheus exporter for AWS Health events."
 edition = "2021"
@@ -12,9 +12,7 @@ license-file = "COPYING"
 [dependencies]
 chrono = { version = "~0.4", features = ["serde"] }
 clap = { version = "~2.33", features = ["color"] }
-fern = { version = "~0.6", features = ["colored"] }
 lazy_static = { version = "~1.4" }
-log = { version = "~0.4" }
 regex = { version = "~1.4" }
 rusoto_core = { version = "~0.46" }
 rusoto_credential = { version = "~0.46" }
@@ -23,6 +21,8 @@ rusoto_signature = { version = "~0.46" }
 rusoto_sts = { version = "~0.46" }
 prometheus = { version = "~0.13", features = ["process"] }
 tokio = { version = "~1.0", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "local-time"] }
 warp = { version = "~0.3", features = ["tls"] }
 
 [profile.release]

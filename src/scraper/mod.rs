@@ -3,7 +3,6 @@ use std::default::Default;
 use std::str::FromStr;
 use std::time::Duration;
 
-use log::debug;
 use prometheus::{opts, IntGaugeVec};
 use rusoto_core::request::BufferedHttpResponse;
 use rusoto_core::{HttpClient, Region, RusotoError};
@@ -14,6 +13,7 @@ use rusoto_health::{
 };
 use rusoto_sts::{StsAssumeRoleSessionCredentialsProvider, StsClient};
 use tokio::time::sleep;
+use tracing::debug;
 use warp::http::StatusCode;
 
 use error::{Error, Result};

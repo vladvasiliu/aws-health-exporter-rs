@@ -277,6 +277,7 @@
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/typenum-74f4fd522879e552/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/unicase-898d82e6087b4828/out" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/target/debug/build/unicase-b1a00d77ad3df119/out" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/target/debug/build/syn-d0655143f1807bec/out" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
