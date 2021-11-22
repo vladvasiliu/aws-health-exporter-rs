@@ -5,6 +5,10 @@ This file documents notable changes for each version.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 - *work in progress*
+* Replace [rusoto](https://github.com/rusoto/rusoto) with [aws-sdk-rust](https://github.com/awslabs/aws-sdk-rust)
+
+
 ## 0.5.0 - 2021.01.20
 
 * Added opencontainer labels to Docker.

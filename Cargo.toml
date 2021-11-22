@@ -10,18 +10,17 @@ license-file = "COPYING"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = { version = "~0.4", features = ["serde"] }
+aws-config = "0.0.25-alpha"
+aws-sdk-health = "0.0.25-alpha"
+color-eyre = "0.5"
+#chrono = { version = "~0.4", features = ["serde"] }
 clap = { version = "~2.33", features = ["color"] }
 lazy_static = { version = "~1.4" }
-regex = { version = "~1.4" }
-rusoto_core = { version = "~0.46" }
-rusoto_credential = { version = "~0.46" }
-rusoto_health = { version = "~0.46" }
-rusoto_signature = { version = "~0.46" }
-rusoto_sts = { version = "~0.46" }
+regex = { version = "~1.5" }
 prometheus = { version = "~0.13", features = ["process"] }
-tokio = { version = "~1.0", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
+tokio = { version = "~1", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
 tracing = "0.1"
+tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "local-time"] }
 warp = { version = "~0.3", features = ["tls"] }
 

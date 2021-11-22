@@ -1,25 +1,42 @@
-#[macro_use]
-extern crate lazy_static;
+use aws_sdk_health::model::OrganizationEventFilter;
+use color_eyre::Result;
 
-use tracing::{error, info};
-
-use crate::exporter::Exporter;
-
-mod config;
-mod exporter;
 mod scraper;
 
 #[tokio::main]
-async fn main() {
-    let config = config::Config::from_args();
+async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
-    info!(
-        "AWS Health Exporter v{} - Listening on {}.",
-        config.version, config.socket_addr
-    );
+    color_eyre::install()?;
 
-    match Exporter::new(config) {
-        Ok(exporter) => exporter.work().await,
-        Err(err) => error!("Failed to create exporter: {}", err),
+    let config = aws_config::load_from_env().await;
+    let client = aws_sdk_health::client::Client::new(&config);
+
+    let regions = vec!["eu-west-3".into()];
+    let filter = OrganizationEventFilter::builder()
+        .set_regions(Some(regions))
+        .build();
+
+    let mut events = vec![];
+    let mut next_token = None;
+    loop {
+        let response = client
+            .describe_events_for_organization()
+            .set_filter(Some(filter.clone()))
+            .set_next_token(next_token)
+            .send()
+            .await?;
+
+        if let Some(events_vec) = response.events {
+            events.extend(events_vec)
+        }
+
+        next_token = response.next_token;
+        if next_token.is_none() {
+            break;
+        }
     }
+
+    println!("{:#?}", events);
+
+    Ok(())
 }
