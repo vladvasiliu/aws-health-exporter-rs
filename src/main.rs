@@ -1,5 +1,9 @@
-use aws_sdk_health::model::OrganizationEventFilter;
+use crate::scraper::STSCredentialsProvider;
+use aws_sdk_health::Region;
 use color_eyre::Result;
+use std::env;
+use tokio::time::{interval, Duration, MissedTickBehavior};
+use tracing::info;
 
 mod scraper;
 
@@ -8,35 +12,35 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     color_eyre::install()?;
 
-    let config = aws_config::load_from_env().await;
+    let role_arn = env::var("AWS_HEALTH_EXPORTER_ROLE")?;
+
+    let credential_provider = STSCredentialsProvider::new(&role_arn, None, None);
+    let config = aws_config::from_env()
+        .region(Region::new("us-east-1"))
+        .credentials_provider(credential_provider)
+        .load()
+        .await;
     let client = aws_sdk_health::client::Client::new(&config);
 
-    let regions = vec!["eu-west-3".into()];
-    let filter = OrganizationEventFilter::builder()
-        .set_regions(Some(regions))
-        .build();
-
-    let mut events = vec![];
-    let mut next_token = None;
+    let s = scraper::Scraper::new(client, Some(vec!["eu-west-3"]), None);
+    let d = Duration::from_secs(30);
+    let mut i = interval(d);
+    i.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    let mut count = 0;
     loop {
-        let response = client
-            .describe_events_for_organization()
-            .set_filter(Some(filter.clone()))
-            .set_next_token(next_token)
-            .send()
-            .await?;
-
-        if let Some(events_vec) = response.events {
-            events.extend(events_vec)
-        }
-
-        next_token = response.next_token;
-        if next_token.is_none() {
-            break;
-        }
+        i.tick().await;
+        count += 1;
+        let res = match s.get_organization_events().await {
+            Ok(_) => "OK".to_string(),
+            Err(e) => format!("{:?}", e),
+        };
+        info!(
+            "Run #{} (t+{}s): {}",
+            count,
+            count * i.period().as_secs(),
+            res
+        );
     }
-
-    println!("{:#?}", events);
 
     Ok(())
 }
