@@ -1,9 +1,9 @@
-use crate::scraper::STSCredentialsProvider;
 use aws_sdk_health::Region;
 use color_eyre::Result;
 use std::env;
 use tokio::time::{interval, Duration, MissedTickBehavior};
 use tracing::info;
+use aws_sdk_sts_caching_provider::STSCredentialsProvider;
 
 mod scraper;
 
@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
 
     let role_arn = env::var("AWS_HEALTH_EXPORTER_ROLE")?;
 
-    let credential_provider = STSCredentialsProvider::new(&role_arn, None, None);
+    let credential_provider = STSCredentialsProvider::new(&role_arn, None, None, Some("aws_health_exporter"), None, 60);
     let config = aws_config::from_env()
         .region(Region::new("us-east-1"))
         .credentials_provider(credential_provider)

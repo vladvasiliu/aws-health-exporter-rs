@@ -178,6 +178,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-sts-caching-provider"
+version = "0.1.0"
+source = "git+https://github.com/vladvasiliu/aws-sdk-sts-caching-provider.git#4e97d0b96f2aa6fff0cd4eb66771f31986b41406"
+dependencies = [
+ "aws-config",
+ "aws-sdk-sts",
+ "aws-types",
+ "tokio",
+ "tracing",
+ "tracing-futures",
+ "tracing-subscriber 0.3.3",
+]
+
+[[package]]
 name = "aws-sig-auth"
 version = "0.0.26-alpha"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -337,8 +351,7 @@ version = "0.6.0-alpha.1"
 dependencies = [
  "aws-config",
  "aws-sdk-health",
- "aws-sdk-sts",
- "aws-types",
+ "aws-sdk-sts-caching-provider",
  "clap",
  "color-eyre",
  "lazy_static",

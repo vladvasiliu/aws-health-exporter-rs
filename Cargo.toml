@@ -11,9 +11,8 @@ license-file = "COPYING"
 
 [dependencies]
 aws-config = "0.0.26-alpha"
-aws-types = "0.0.26-alpha"
 aws-sdk-health = "0.0.26-alpha"
-aws-sdk-sts = "0.0.26-alpha"
+aws-sdk-sts-caching-provider = { git = "https://github.com/vladvasiliu/aws-sdk-sts-caching-provider.git" }
 color-eyre = "0.5"
 #chrono = { version = "~0.4", features = ["serde"] }
 clap = { version = "~2.33", features = ["color"] }
