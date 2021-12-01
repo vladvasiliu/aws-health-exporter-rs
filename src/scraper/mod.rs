@@ -1,8 +1,6 @@
 use aws_sdk_health::client::Client as HealthClient;
 use aws_sdk_health::model::{OrganizationEvent, OrganizationEventFilter};
-use color_eyre::eyre::eyre;
 use color_eyre::Result;
-
 
 pub struct Scraper {
     client: HealthClient,
