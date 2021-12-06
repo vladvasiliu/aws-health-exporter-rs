@@ -10,12 +10,11 @@ license-file = "COPYING"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aws-config = "0.0.26-alpha"
-aws-sdk-health = "0.0.26-alpha"
-aws-sdk-sts-caching-provider = { git = "https://github.com/vladvasiliu/aws-sdk-sts-caching-provider.git" }
+aws-config = "0.2.0"
+aws-sdk-health = "0.2.0"
+aws-sdk-sts-caching-provider = { git = "https://github.com/vladvasiliu/aws-sdk-sts-caching-provider.git", tag = "v0.2.0-1" }
 color-eyre = "0.5"
 #chrono = { version = "~0.4", features = ["serde"] }
-clap = { version = "~2.33", features = ["color"] }
 lazy_static = { version = "~1.4" }
 regex = { version = "~1.5" }
 prometheus = { version = "~0.13", features = ["process"] }
