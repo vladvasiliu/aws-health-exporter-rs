@@ -1,5 +1,6 @@
+use aws_config::sts::AssumeRoleProvider;
 use aws_sdk_health::Region;
-use aws_sdk_sts_caching_provider::STSCredentialsProvider;
+use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use std::env;
 
@@ -12,12 +13,21 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let role_arn = env::var("AWS_HEALTH_EXPORTER_ROLE")?;
+    let base_config = aws_config::load_from_env().await;
+    let base_credentials = base_config
+        .credentials_provider()
+        .ok_or_else(|| eyre!("Failed to retrieve base credentials"))?;
+    let base_region = base_config
+        .region()
+        .ok_or_else(|| eyre!("Failed to get base region"))?;
+    let sts_credential_provider = AssumeRoleProvider::builder(role_arn)
+        .session_name("AWS_Health_Exporter")
+        .region(base_region.clone())
+        .build(base_credentials.clone());
 
-    let credential_provider =
-        STSCredentialsProvider::new(&role_arn, None, None, Some("aws_health_exporter"), None, 60);
     let config = aws_config::from_env()
-        .region(Region::new("us-east-1"))
-        .credentials_provider(credential_provider)
+        .region(Region::new("us-east-1")) // AWS Health is only available from this region
+        .credentials_provider(sts_credential_provider)
         .load()
         .await;
     let client = aws_sdk_health::client::Client::new(&config);
