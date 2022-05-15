@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
     let s = scraper::Scraper::new(client, Some(vec!["eu-west-3"]), None);
 
     let events = s.get_organization_events().await?;
-    println!("{:?}", events);
+    println!("{:#?}", events);
 
     Ok(())
 }
