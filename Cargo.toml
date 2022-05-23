@@ -18,6 +18,7 @@ lazy_static = { version = "~1.4" }
 regex = { version = "~1.5" }
 prometheus = { version = "~0.13", features = ["process"] }
 tokio = { version = "~1", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
+tokio-stream = "0.1"
 tracing = "0.1"
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "local-time"] }

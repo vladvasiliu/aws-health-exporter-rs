@@ -1,6 +1,7 @@
 use aws_sdk_health::client::Client as HealthClient;
 use aws_sdk_health::model::{OrganizationEvent, OrganizationEventFilter};
-use color_eyre::Result;
+use color_eyre::{Report, Result};
+use tokio_stream::StreamExt;
 
 pub struct Scraper {
     client: HealthClient,
@@ -24,28 +25,17 @@ impl Scraper {
     }
 
     pub async fn get_organization_events(&self) -> Result<Vec<OrganizationEvent>> {
-        let mut events = vec![];
-        let mut next_token = None;
+        let response = self
+            .client
+            .describe_events_for_organization()
+            .set_filter(Some(self.event_filter.clone()))
+            .into_paginator()
+            .items()
+            .send();
 
-        loop {
-            let response = self
-                .client
-                .describe_events_for_organization()
-                .set_filter(Some(self.event_filter.clone()))
-                .set_next_token(next_token)
-                .send()
-                .await?;
-
-            if let Some(events_vec) = response.events {
-                events.extend(events_vec)
-            }
-
-            next_token = response.next_token;
-            if next_token.is_none() {
-                break;
-            }
-        }
-
-        Ok(events)
+        response
+            .collect::<Result<Vec<OrganizationEvent>, _>>()
+            .await
+            .map_err(Report::from)
     }
 }
