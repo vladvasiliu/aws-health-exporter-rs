@@ -3,6 +3,7 @@ use aws_sdk_health::Region;
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
 use std::env;
+use tracing::debug;
 
 // mod exporter;
 mod scraper;
@@ -35,8 +36,13 @@ async fn main() -> Result<()> {
     let s = scraper::Scraper::new(client, Some(vec!["eu-west-3"]), None);
 
     let events = s.get_organization_events().await?;
-
-    println!("{:#?}", events);
+    for event in events {
+        let accounts = s.get_affected_accounts(&event).await?;
+        debug!("accounts: {:?}\nevent: {:#?}", accounts, event)
+    }
+    // s.get_event_details(events).await?;
+    // let entities = s.get_affected_entities(events).await?;
+    // println!("{:#?}", entities);
 
     Ok(())
 }

@@ -38,4 +38,90 @@ impl Scraper {
             .await
             .map_err(Report::from)
     }
+
+    pub async fn get_affected_accounts(&self, event: &OrganizationEvent) -> Result<Vec<String>> {
+        let response = self
+            .client
+            .describe_affected_accounts_for_organization()
+            .set_event_arn(event.arn.clone())
+            .into_paginator()
+            .items()
+            .send();
+
+        response
+            .collect::<Result<Vec<String>, _>>()
+            .await
+            .map_err(Report::from)
+    }
+
+    // TODO: Find a way to test those
+
+    // pub async fn get_event_details(
+    //     &self,
+    //     events_vec: Vec<OrganizationEvent>,
+    // ) -> Result<Vec<EventDetails>> {
+    //     let details_vec = vec![];
+    //
+    //     for event in events_vec {
+    //         let filter = self.get_event_account_filter(&event).await?;
+    //         let response = self
+    //             .client
+    //             .describe_event_details_for_organization()
+    //             .set_organization_event_detail_filters(Some(filter))
+    //             .send()
+    //             .await?;
+    //         debug!("event details: {:#?}", response);
+    //     }
+    //
+    //     Ok(details_vec)
+    // }
+
+    // pub async fn get_affected_entities(
+    //     &self,
+    //     events_vec: Vec<OrganizationEvent>,
+    // ) -> Result<Vec<AffectedEntity>> {
+    //     let mut entity_vec = vec![];
+    //
+    //     for event in events_vec {
+    //         let filter = self.get_event_account_filter(&event).await?;
+    //         let mut response = self
+    //             .client
+    //             .describe_affected_entities_for_organization()
+    //             .set_organization_entity_filters(Some(filter))
+    //             .into_paginator()
+    //             // .items()
+    //             .send();
+    //         while let Some(entities) = response.next().await {
+    //             debug!("Entities: {:#?}", entities);
+    //         }
+    //
+    //         // entity_vec.extend(result);
+    //     }
+    //
+    //     Ok(entity_vec)
+    // }
+    //
+    // async fn get_event_account_filter(
+    //     &self,
+    //     event: &OrganizationEvent,
+    // ) -> Result<Vec<EventAccountFilter>> {
+    //     let mut result = vec![];
+    //     let accounts = if event.event_scope_code == Some(EventScopeCode::AccountSpecific) {
+    //         self.get_affected_accounts(&event)
+    //             .await?
+    //             .into_iter()
+    //             .map(Option::from)
+    //             .collect()
+    //     } else {
+    //         vec![None]
+    //     };
+    //     for affected_account in accounts {
+    //         let filter = EventAccountFilter::builder()
+    //             .set_event_arn(event.arn.clone())
+    //             .set_aws_account_id(affected_account)
+    //             .build();
+    //         result.push(filter);
+    //     }
+    //     Ok(result)
+    // }
 }
