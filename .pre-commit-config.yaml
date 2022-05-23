@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: 38b88246ccc552bffaaf54259d064beeee434539  # frozen: v4.0.1
+    rev: db7346d375eda68a0174f2c057dd97f2fbffe030  # frozen: v4.2.0
     hooks:
       - id: check-added-large-files
       - id: check-byte-order-marker
@@ -14,7 +14,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
 
   - repo: https://github.com/Yelp/detect-secrets.git
-    rev: f6027a0521e044ba46e54611cabd787b7a88d1a9  # frozen: v1.1.0
+    rev: 70e6cf69f2d544a49729039a374d86d7b3e472d9  # frozen: v1.2.0
     hooks:
       - id: detect-secrets
         #        args: ['--baseline', '.secrets.baseline']
