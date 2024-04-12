@@ -1,6 +1,6 @@
 use aws_sdk_health::client::Client as HealthClient;
-use aws_sdk_health::model::{OrganizationEvent, OrganizationEventFilter};
-use color_eyre::{Report, Result};
+use aws_sdk_health::types::{OrganizationEvent, OrganizationEventFilter};
+use anyhow::{Result, Error};
 use tokio_stream::StreamExt;
 
 pub struct Scraper {
@@ -36,7 +36,7 @@ impl Scraper {
         response
             .collect::<Result<Vec<OrganizationEvent>, _>>()
             .await
-            .map_err(Report::from)
+            .map_err(Error::from)
     }
 
     pub async fn get_affected_accounts(&self, event: &OrganizationEvent) -> Result<Vec<String>> {
@@ -51,7 +51,7 @@ impl Scraper {
         response
             .collect::<Result<Vec<String>, _>>()
             .await
-            .map_err(Report::from)
+            .map_err(Error::from)
     }
 
     // TODO: Find a way to test those
