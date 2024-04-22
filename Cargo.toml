@@ -13,16 +13,15 @@ license-file = "COPYING"
 anyhow = "1"
 aws-config = "1.1"
 aws-sdk-health = "1.19"
-#chrono = { version = "~0.4", features = ["serde"] }
+axum = { version = "0.7", default-features = false, features = ["http1", "matched-path", "tokio", "tower-log", "tracing"] }
 lazy_static = { version = "~1.4" }
 regex = { version = "1" }
-prometheus = { version = "~0.13", features = ["process"] }
-tokio = { version = "~1", features = ["macros", "parking_lot", "rt-multi-thread", "time"] }
-tokio-stream = "0.1"
+prometheus-client = "0.22"
+tokio = { version = "~1", features = ["macros", "parking_lot", "rt-multi-thread", "signal", "time"] }
 tracing = "0.1"
+tracing-error = { version = "^0.2", features = ["traced-error"] }
 tracing-futures = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "local-time"] }
-warp = { version = "~0.3", features = ["tls"] }
 
 [profile.release]
 lto = true

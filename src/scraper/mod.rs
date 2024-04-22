@@ -1,7 +1,6 @@
 use aws_sdk_health::client::Client as HealthClient;
 use aws_sdk_health::types::{OrganizationEvent, OrganizationEventFilter};
 use anyhow::{Result, Error};
-use tokio_stream::StreamExt;
 
 pub struct Scraper {
     client: HealthClient,
