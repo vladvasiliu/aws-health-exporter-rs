@@ -11,10 +11,10 @@ license-file = "COPYING"
 
 [dependencies]
 anyhow = "1"
-aws-config = "1.1"
-aws-sdk-health = "1.19"
+aws-config = "1.5"
+aws-sdk-health = "1.35"
 axum = { version = "0.7", default-features = false, features = ["http1", "matched-path", "tokio", "tower-log", "tracing"] }
-lazy_static = { version = "~1.4" }
+lazy_static = { version = "~1.5" }
 regex = { version = "1" }
 prometheus-client = "0.22"
 tokio = { version = "~1", features = ["macros", "parking_lot", "rt-multi-thread", "signal", "time"] }

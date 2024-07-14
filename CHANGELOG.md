@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.6.0 - *work in progress*
 * Replace [rusoto](https://github.com/rusoto/rusoto) with [aws-sdk-rust](https://github.com/awslabs/aws-sdk-rust)
+* Rename exported metrics from `aws_health_events` to `aws_health_event`
+* Replace `warp` with `axum`
 
 
 ## 0.5.0 - 2021.01.20
